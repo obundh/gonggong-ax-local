@@ -513,7 +513,7 @@ await sharp({
         <text x="540" y="1200" text-anchor="middle" font-family="${fontFamily}" font-size="27"
           font-weight="900" fill="${colors.cream}">Windows EXE 하나로 실행</text>
         <text x="540" y="1248" text-anchor="middle" font-family="${fontFamily}" font-size="24"
-          font-weight="800" fill="${colors.mint}">github.com/obundh/gonggong-ax-local</text>
+          font-weight="800" fill="${colors.mint}">github.com/obundh/gonggong-ax-local-2</text>
       `),
       left: 0,
       top: 0,

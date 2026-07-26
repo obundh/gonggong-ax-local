@@ -20,7 +20,7 @@
 Windows 포터블 EXE 하나로 실행합니다.
 
 GitHub
-https://github.com/obundh/gonggong-ax-local
+https://github.com/obundh/gonggong-ax-local-2
 
 ## 해시태그
 
