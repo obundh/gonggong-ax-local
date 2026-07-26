@@ -1,4 +1,8 @@
 .desktop {
+  --text-caption: 11px;
+  --text-small: 12px;
+  --text-body: 13px;
+  --text-control: 14px;
   min-height: 100vh;
   padding: 24px;
   color: #1f1f1f;
@@ -323,7 +327,7 @@
 .explorerBody {
   display: grid;
   min-height: calc(100vh - 270px);
-  grid-template-columns: 224px minmax(500px, 1fr) 340px;
+  grid-template-columns: 235px minmax(520px, 1fr) 380px;
 }
 
 .navigationPane {
@@ -1282,33 +1286,42 @@
 }
 
 .calendarWorkspace {
-  padding: 16px 18px 24px;
+  padding: 18px 20px 26px;
 }
 
 .calendarToolbar {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) auto minmax(240px, 1fr);
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 13px;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #dce3e9;
+  border-radius: 8px;
+  background: #f8fafc;
 }
 
-.calendarToolbar > div:first-child {
+.calendarToolbarMain {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.calendarNavigation {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .calendarToolbar button {
-  min-width: 32px;
-  min-height: 30px;
-  padding: 0 9px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 12px;
   border: 1px solid #d6d6d6;
-  border-radius: 5px;
+  border-radius: 6px;
   color: #303030;
   background: #fff;
   font: inherit;
-  font-size: 10px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -1317,22 +1330,99 @@
   border-color: #bad4e8;
 }
 
-.calendarToolbar h2 {
+.calendarPeriod {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.calendarPeriod h2 {
   margin: 0;
   color: #222;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
-  text-align: center;
   white-space: nowrap;
+}
+
+.calendarPeriodSelects {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendarPeriodSelects label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.calendarPeriodSelects select {
+  min-width: 92px;
+  min-height: 38px;
+  padding: 0 28px 0 10px;
+  border: 1px solid #cfd6dc;
+  border-radius: 6px;
+  color: #262626;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.calendarPeriodSelects label:last-child select {
+  min-width: 72px;
+}
+
+.calendarViewSwitch {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid #d7dce0;
+  border-radius: 7px;
+  background: #eceff2;
+}
+
+.calendarViewSwitch button {
+  min-height: 36px;
+  border-color: transparent;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.calendarViewSwitch .calendarViewSelected {
+  color: #075b9d;
+  background: #fff;
+  border-color: #bfd7ea;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(48, 67, 82, 0.1);
+}
+
+.calendarToolbarFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 11px;
+  border-top: 1px solid #e2e7eb;
+}
+
+.calendarToolbarFoot > span {
+  color: #6b747c;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .calendarLegend {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 13px;
   color: #656565;
-  font-size: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -1343,8 +1433,8 @@
 }
 
 .calendarLegend i {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
 
@@ -1375,12 +1465,12 @@
 }
 
 .calendarTable th {
-  height: 30px;
+  height: 38px;
   color: #686868;
   background: #f7f7f7;
   border-right: 1px solid #e7e7e7;
   border-bottom: 1px solid #dcdcdc;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 500;
   text-align: center;
 }
@@ -1394,7 +1484,7 @@
 }
 
 .calendarTable td {
-  height: 104px;
+  height: 122px;
   padding: 0;
   vertical-align: top;
   border-right: 1px solid #ebebeb;
@@ -1417,12 +1507,12 @@
 .calendarDay {
   display: flex;
   width: 100%;
-  height: 103px;
+  height: 121px;
   min-width: 0;
   align-items: stretch;
   flex-direction: column;
-  gap: 4px;
-  padding: 7px;
+  gap: 6px;
+  padding: 9px;
   border: 0;
   color: #333;
   background: #fff;
@@ -1457,19 +1547,19 @@
 
 .calendarDayNumber {
   display: flex;
-  min-height: 18px;
+  min-height: 22px;
   align-items: center;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .calendarDayNumber small {
-  padding: 2px 4px;
+  padding: 2px 6px;
   border-radius: 7px;
   color: #fff;
   background: #246fa7;
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .calendarDayEvents {
@@ -1481,10 +1571,10 @@
 .calendarDayEvents em {
   display: block;
   overflow: hidden;
-  padding: 3px 5px;
+  padding: 4px 6px;
   border-left: 3px solid;
   border-radius: 3px;
-  font-size: 7px;
+  font-size: 10px;
   font-style: normal;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -1513,7 +1603,7 @@
 .calendarDayEvents > small {
   padding-left: 4px;
   color: #777;
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .dayAgenda {
@@ -1526,11 +1616,11 @@
 
 .dayAgendaHeading {
   display: flex;
-  min-height: 54px;
+  min-height: 64px;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 9px 13px;
+  padding: 11px 15px;
   background: #f7f7f7;
   border-bottom: 1px solid #e2e2e2;
 }
@@ -1541,13 +1631,13 @@
 }
 
 .dayAgendaHeading strong {
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .dayAgendaHeading small {
   margin-top: 2px;
   color: #777;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .dayAgendaHeading > span {
@@ -1555,23 +1645,23 @@
   border-radius: 9px;
   color: #555;
   background: #e9e9e9;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .agendaList {
   display: grid;
-  gap: 4px;
-  padding: 8px;
+  gap: 6px;
+  padding: 10px;
 }
 
 .agendaList > button {
   display: grid;
   min-width: 0;
-  min-height: 42px;
-  grid-template-columns: 38px minmax(0, 1fr);
+  min-height: 50px;
+  grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
   gap: 9px;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
@@ -1587,10 +1677,10 @@
 
 .agendaList > button > span:first-child {
   display: grid;
-  min-height: 23px;
+  min-height: 28px;
   place-items: center;
   border-radius: 4px;
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1608,13 +1698,13 @@
 
 .agendaList strong {
   color: #333;
-  font-size: 10px;
+  font-size: 13px;
 }
 
 .agendaList small {
   margin-top: 2px;
   color: #777;
-  font-size: 8px;
+  font-size: 11px;
 }
 
 .agendaCandidate > span:first-child {
@@ -1636,8 +1726,231 @@
   margin: 0;
   padding: 22px;
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
+}
+
+.calendarList {
+  display: grid;
+  gap: 12px;
+}
+
+.calendarListDate {
+  overflow: hidden;
+  border: 1px solid #dce1e5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.calendarListDateSelected {
+  border-color: #78acd1;
+  box-shadow: 0 0 0 2px rgba(40, 128, 190, 0.1);
+}
+
+.calendarListDateHeading {
+  background: #f4f7f9;
+  border-bottom: 1px solid #e1e5e8;
+}
+
+.calendarListDateHeading > button {
+  display: grid;
+  width: 100%;
+  min-height: 68px;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border: 0;
+  color: #303030;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendarListDateHeading > button:hover {
+  background: #edf5fa;
+}
+
+.calendarListDateHeading > button > span:nth-child(2) {
+  min-width: 0;
+}
+
+.calendarListDateHeading > button > span:nth-child(2) strong,
+.calendarListDateHeading > button > span:nth-child(2) small {
+  display: block;
+}
+
+.calendarListDateHeading > button > span:nth-child(2) strong {
+  font-size: 15px;
+}
+
+.calendarListDateHeading > button > span:nth-child(2) small {
+  margin-top: 3px;
+  color: #6e777e;
+  font-size: 11px;
+}
+
+.calendarListDateHeading > button > b {
+  padding: 5px 9px;
+  border-radius: 12px;
+  color: #53616b;
+  background: #e4eaee;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.calendarListDay {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  align-content: center;
+  border: 1px solid #c8dae8;
+  border-radius: 7px;
+  color: #155f96;
+  background: #edf6fc;
+}
+
+.calendarListDay strong,
+.calendarListDay small {
+  display: block;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.calendarListDay strong {
+  font-size: 18px;
+}
+
+.calendarListDay small {
+  margin-top: 3px;
+  font-size: 10px;
+}
+
+.calendarListItems {
+  display: grid;
+}
+
+.calendarListItems > button {
+  display: grid;
+  width: 100%;
+  min-height: 64px;
+  grid-template-columns: minmax(78px, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid #eceff1;
+  color: #2f2f2f;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendarListItems > button:last-child {
+  border-bottom: 0;
+}
+
+.calendarListItems > button:hover,
+.calendarListItems .calendarListItemSelected {
+  background: #f0f7fc;
+}
+
+.calendarListItems .calendarListItemSelected {
+  box-shadow: inset 4px 0 0 #2680c2;
+}
+
+.calendarListKinds {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.calendarListKinds i {
+  display: inline-grid;
+  min-height: 26px;
+  place-items: center;
+  padding: 0 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.listKindCandidate {
+  color: #175f94;
+  background: #e5f2fb;
+}
+
+.listKindModified {
+  color: #5f5f5f;
+  background: #ededed;
+}
+
+.listKindConfirmed {
+  color: #176f43;
+  background: #e3f6eb;
+}
+
+.calendarListFile {
+  min-width: 0;
+}
+
+.calendarListFile strong,
+.calendarListFile small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendarListFile strong {
+  color: #25465e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.calendarListFile small {
+  margin-top: 4px;
+  color: #707980;
+  font-size: 11px;
+}
+
+.calendarListOpen {
+  color: #176da7;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.calendarListEmpty {
+  display: grid;
+  min-height: 280px;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 32px;
+  border: 1px dashed #ccd5dc;
+  border-radius: 8px;
+  color: #6b747b;
+  background: #fafbfc;
+  text-align: center;
+}
+
+.calendarListEmpty strong {
+  margin-top: 7px;
+  color: #333;
+  font-size: 16px;
+}
+
+.calendarListEmpty p {
+  max-width: 380px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .calendarPreview {
@@ -1870,7 +2183,215 @@
   cursor: pointer;
 }
 
+/* Larger type for long handover sessions on ordinary Windows displays. */
+.appTitle strong {
+  font-size: 15px;
+}
+
+.seriesNav a,
+.seriesNav span {
+  font-size: var(--text-body);
+}
+
+.commandBar button {
+  min-height: 40px;
+  font-size: var(--text-control);
+}
+
+.addressBar,
+.searchBox input {
+  font-size: var(--text-body);
+}
+
+.safetyStrip {
+  min-height: 38px;
+  font-size: var(--text-small);
+}
+
+.navGroup > strong,
+.navGroup button > b {
+  font-size: var(--text-small);
+}
+
+.navGroup button {
+  min-height: 40px;
+  font-size: var(--text-control);
+}
+
+.navEmpty {
+  font-size: var(--text-small);
+}
+
+.paneHeading h1 {
+  font-size: 20px;
+}
+
+.paneHeading > span {
+  font-size: var(--text-body);
+}
+
+.emptyState > p,
+.emptyState button {
+  font-size: var(--text-control);
+}
+
+.emptyState ul {
+  font-size: var(--text-body);
+}
+
+.fileTable,
+.branchTable {
+  font-size: var(--text-body);
+}
+
+.fileTable th,
+.branchTable th {
+  height: 38px;
+}
+
+.fileTable td,
+.branchTable td {
+  min-height: 54px;
+  padding-block: 9px;
+}
+
+.fileTable td small,
+.branchTable td small {
+  font-size: var(--text-caption);
+}
+
+.statusTag {
+  min-height: 27px;
+  font-size: var(--text-caption);
+}
+
+.previewHeading {
+  min-height: 50px;
+}
+
+.previewHeading strong {
+  font-size: var(--text-control);
+}
+
+.previewHeading span,
+.previewBasis {
+  font-size: var(--text-caption);
+}
+
+.previewEmpty > strong,
+.folderPreview h2 {
+  font-size: 17px;
+}
+
+.previewEmpty p,
+.folderPreview p,
+.folderPreview small {
+  font-size: var(--text-body);
+}
+
+.filePreview > h2,
+.branchPreview > h2 {
+  font-size: 20px;
+}
+
+.parseFlow small,
+.fileFacts > div,
+.pathBox small,
+.pathBox span,
+.previewCaution,
+.branchPreview > p {
+  font-size: var(--text-small);
+}
+
+.parseFlow strong {
+  font-size: var(--text-body);
+}
+
+.parseFlow b {
+  font-size: 16px;
+}
+
+.previewSubheading {
+  font-size: var(--text-body);
+}
+
+.previewFileList strong,
+.aiTool strong,
+.aiDraft > div,
+.aiDraft pre {
+  font-size: var(--text-small);
+}
+
+.previewFileList small,
+.aiTool small,
+.aiError {
+  font-size: var(--text-caption);
+}
+
+.aiTool > button {
+  min-height: 40px;
+  font-size: var(--text-body);
+}
+
+.statusBar {
+  min-height: 32px;
+  font-size: var(--text-caption);
+}
+
+.commandCount {
+  min-width: 20px;
+  height: 20px;
+  font-size: 10px;
+}
+
+.calendarDateCard small,
+.calendarDateCard span,
+.scheduleFileSelect > span,
+.manualDateField > span,
+.scheduleFileSummary small,
+.dateEvidenceList small,
+.confirmedSchedule span,
+.confirmedSchedule small,
+.confirmedSchedule button {
+  font-size: var(--text-caption);
+}
+
+.calendarDateCard strong {
+  font-size: 19px;
+}
+
+.scheduleFileSelect select,
+.manualDateField input,
+.scheduleFileSummary strong,
+.dateEvidenceList strong,
+.confirmDateButton {
+  font-size: var(--text-body);
+}
+
+.scheduleFileSelect select,
+.manualDateField input,
+.confirmDateButton {
+  min-height: 42px;
+}
+
+.dateEvidenceList button {
+  min-height: 50px;
+}
+
+.dateEvidenceList button > span:first-child {
+  min-height: 27px;
+  font-size: var(--text-caption);
+}
+
+.confirmedSchedule strong {
+  font-size: 16px;
+}
+
 .calendarToolbar button:focus-visible,
+.calendarPeriodSelects select:focus-visible,
+.calendarViewSwitch button:focus-visible,
+.calendarListDateHeading button:focus-visible,
+.calendarListItems button:focus-visible,
 .agendaList button:focus-visible,
 .dateEvidenceList button:focus-visible,
 .confirmDateButton:focus-visible,
@@ -1901,7 +2422,7 @@
   }
 
   .explorerBody {
-    grid-template-columns: 190px minmax(440px, 1fr) 300px;
+    grid-template-columns: 200px minmax(440px, 1fr) 330px;
   }
 
   .fileTable th:nth-child(4),
@@ -1925,13 +2446,25 @@
     width: 15%;
   }
 
-  .calendarToolbar {
-    grid-template-columns: 1fr auto;
+  .calendarToolbarMain {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .calendarPeriod {
+    justify-content: flex-end;
+  }
+
+  .calendarViewSwitch {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .calendarToolbarFoot {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .calendarLegend {
-    grid-column: 1 / -1;
-    grid-row: 2;
     justify-content: flex-start;
   }
 }
@@ -2043,26 +2576,65 @@
     padding: 12px;
   }
 
-  .calendarToolbar {
+  .calendarToolbarMain {
     grid-template-columns: 1fr;
   }
 
-  .calendarToolbar > div:first-child {
+  .calendarNavigation {
     justify-content: center;
   }
 
-  .calendarToolbar h2 {
-    grid-row: 1;
+  .calendarPeriod {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .calendarPeriod h2 {
+    text-align: center;
+  }
+
+  .calendarPeriodSelects {
+    justify-content: center;
+  }
+
+  .calendarViewSwitch {
+    grid-column: 1;
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .calendarViewSwitch button {
+    flex: 1;
+  }
+
+  .calendarToolbarFoot {
+    flex-direction: column;
   }
 
   .calendarLegend {
-    grid-column: 1;
-    grid-row: 3;
-    justify-content: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .calendarTableWrap {
     max-height: 390px;
+  }
+
+  .calendarListDateHeading > button {
+    grid-template-columns: 50px minmax(0, 1fr);
+  }
+
+  .calendarListDateHeading > button > b {
+    display: none;
+  }
+
+  .calendarListItems > button {
+    grid-template-columns: minmax(70px, auto) minmax(0, 1fr);
+  }
+
+  .calendarListOpen {
+    display: none;
   }
 
   .emptyState {

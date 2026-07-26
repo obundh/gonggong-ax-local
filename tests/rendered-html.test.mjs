@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render(path = "/") {
@@ -67,7 +68,9 @@ test("server-renders the filename-only handover mapper", async () => {
     /<title>공공 AX 로컬 시리즈 - 인수인계<\/title>/i,
   );
   assert.match(html, /파일 탐색/);
-  assert.match(html, /월간 달력/);
+  assert.match(html, /일정 달력/);
+  assert.match(html, /월간·목록 달력과 연·월 바로가기/);
+  assert.match(html, /series3-og-v4\.png/);
   assert.match(html, /파일명 날짜는 시행일 후보/);
   assert.match(html, /파일 수정일은 시행일이 아닙니다/);
   assert.match(html, /파일명에서 추출한 제목 후보/);
@@ -76,4 +79,18 @@ test("server-renders the filename-only handover mapper", async () => {
   assert.match(html, /인터넷·기관 외부 전송 없음/);
   assert.match(html, /재난업무 예시로 체험/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
+});
+
+test("series 3 exposes shared year-month controls and both calendar views", async () => {
+  const source = await readFile(
+    new URL("../app/series3/page.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /aria-label="연도 선택"/);
+  assert.match(source, /aria-label="월 선택"/);
+  assert.match(source, /aria-label="달력 보기 방식"/);
+  assert.match(source, />\s*월간 보기\s*</);
+  assert.match(source, />\s*목록 보기\s*</);
+  assert.match(source, /calendarEvidenceItems\(evidence\)/);
 });

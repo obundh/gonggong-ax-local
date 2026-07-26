@@ -23,6 +23,7 @@ type LocalModel = {
 
 type AiState = "idle" | "connecting" | "generating" | "done" | "error";
 type WorkspaceView = "files" | "calendar" | "handover";
+type CalendarDisplay = "month" | "list";
 
 type ScheduleOverride = {
   date: string;
@@ -34,6 +35,13 @@ type CalendarEvidence = {
   filename: ExplorerFile[];
   modified: ExplorerFile[];
   confirmed: ExplorerFile[];
+};
+
+type CalendarEvidenceKind = keyof CalendarEvidence;
+
+type CalendarEvidenceItem = {
+  file: ExplorerFile;
+  kinds: CalendarEvidenceKind[];
 };
 
 type ExplorerFile = AnalyzedFilename & {
@@ -204,6 +212,39 @@ function formatDateKey(dateKey: string) {
   return `${year}년 ${month}월 ${day}일`;
 }
 
+function formatCalendarListDate(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day) return dateKey;
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][
+    new Date(year, month - 1, day).getDay()
+  ];
+  return `${month}월 ${day}일 ${weekday}요일`;
+}
+
+function calendarEvidenceItems(
+  evidence: CalendarEvidence,
+): CalendarEvidenceItem[] {
+  const items = new Map<string, CalendarEvidenceItem>();
+  const priority: CalendarEvidenceKind[] = [
+    "confirmed",
+    "filename",
+    "modified",
+  ];
+
+  priority.forEach((kind) => {
+    evidence[kind].forEach((file) => {
+      const current = items.get(file.relativePath);
+      if (current) {
+        current.kinds.push(kind);
+      } else {
+        items.set(file.relativePath, { file, kinds: [kind] });
+      }
+    });
+  });
+
+  return Array.from(items.values());
+}
+
 function dateContextLabel(contextHint: string) {
   const labels: Record<string, string> = {
     execution: "시행 표현 주변",
@@ -352,6 +393,8 @@ export default function SeriesThreePage() {
   const [selectedFilePath, setSelectedFilePath] = useState("");
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("files");
+  const [calendarDisplay, setCalendarDisplay] =
+    useState<CalendarDisplay>("month");
   const [query, setQuery] = useState("");
   const [calendarMonth, setCalendarMonth] = useState("");
   const [selectedCalendarDate, setSelectedCalendarDate] = useState("");
@@ -500,6 +543,36 @@ export default function SeriesThreePage() {
     [calendarMonth],
   );
 
+  const calendarListDates = useMemo(
+    () =>
+      Array.from(calendarEvidenceByDate.entries())
+        .filter(([date]) => monthKeyFromDate(date) === calendarMonth)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([date, evidence]) => ({
+          date,
+          evidence,
+          items: calendarEvidenceItems(evidence),
+        })),
+    [calendarEvidenceByDate, calendarMonth],
+  );
+
+  const calendarYears = useMemo(() => {
+    const years = new Set<number>();
+    calendarEvidenceByDate.forEach((_, date) => {
+      const year = Number(date.slice(0, 4));
+      if (year >= 1900 && year <= 2100) years.add(year);
+    });
+
+    const selectedYear =
+      Number(calendarMonth.slice(0, 4)) || new Date().getFullYear();
+    for (let offset = -3; offset <= 3; offset += 1) {
+      const year = selectedYear + offset;
+      if (year >= 1900 && year <= 2100) years.add(year);
+    }
+
+    return Array.from(years).sort((left, right) => left - right);
+  }, [calendarEvidenceByDate, calendarMonth]);
+
   const confirmedScheduleCount = Object.keys(scheduleOverrides).length;
   const todayKey = analysis
     ? dateKeyFromTimestamp(Date.parse(analysis.analyzedAt))
@@ -555,6 +628,7 @@ export default function SeriesThreePage() {
     setSelectedFilePath(next.branches[0]?.files[0]?.relativePath ?? "");
     setSelectedBranchId(next.branches[0]?.id ?? "");
     setWorkspaceView("files");
+    setCalendarDisplay("month");
     setQuery("");
     setCalendarMonth(monthKeyFromDate(focusDate));
     setSelectedCalendarDate(focusDate);
@@ -586,6 +660,7 @@ export default function SeriesThreePage() {
     setSelectedFilePath("");
     setSelectedBranchId("");
     setWorkspaceView("files");
+    setCalendarDisplay("month");
     setQuery("");
     setCalendarMonth("");
     setSelectedCalendarDate("");
@@ -612,6 +687,28 @@ export default function SeriesThreePage() {
   const openCalendar = () => {
     setWorkspaceView("calendar");
     setQuery("");
+  };
+
+  const showCalendarMonth = (nextMonth: string) => {
+    if (!/^\d{4}-\d{2}$/u.test(nextMonth)) return;
+    const firstEvidenceDate =
+      Array.from(calendarEvidenceByDate.keys())
+        .filter((date) => monthKeyFromDate(date) === nextMonth)
+        .sort()
+        .at(0) ?? `${nextMonth}-01`;
+    setCalendarMonth(nextMonth);
+    if (monthKeyFromDate(selectedCalendarDate) !== nextMonth) {
+      setSelectedCalendarDate(firstEvidenceDate);
+      const firstEvidence = calendarEvidenceByDate.get(firstEvidenceDate);
+      const representative =
+        firstEvidence?.confirmed[0] ??
+        firstEvidence?.filename[0] ??
+        firstEvidence?.modified[0];
+      if (representative) {
+        setSelectedFilePath(representative.relativePath);
+        setSelectedBranchId(representative.branchId);
+      }
+    }
   };
 
   const selectCalendarFile = (file: ExplorerFile, date: string) => {
@@ -840,7 +937,7 @@ ${aiContext(analysis, scheduleOverrides)}`,
             onClick={openCalendar}
             disabled={!analysis}
           >
-            월간 달력
+            일정 달력
             {confirmedScheduleCount > 0 && (
               <b className={styles.commandCount}>{confirmedScheduleCount}</b>
             )}
@@ -1041,7 +1138,7 @@ ${aiContext(analysis, scheduleOverrides)}`,
                 <ul>
                   <li>본문 미확인</li>
                   <li>파일명에서 추출한 제목 후보 미리보기</li>
-                  <li>월간 달력에서 시행일 확인</li>
+                  <li>월간·목록 달력과 연·월 바로가기</li>
                   <li>원본 파일 변경 없음</li>
                 </ul>
               </div>
@@ -1167,60 +1264,153 @@ ${aiContext(analysis, scheduleOverrides)}`,
 
                 <section className={styles.calendarWorkspace}>
                   <div className={styles.calendarToolbar}>
-                    <div>
-                      <button
-                        type="button"
-                        aria-label="이전 달"
-                        onClick={() =>
-                          setCalendarMonth((current) => shiftMonth(current, -1))
-                        }
+                    <div className={styles.calendarToolbarMain}>
+                      <div className={styles.calendarNavigation}>
+                        <button
+                          type="button"
+                          aria-label="이전 달"
+                          onClick={() =>
+                            showCalendarMonth(shiftMonth(calendarMonth, -1))
+                          }
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCalendarMonth(monthKeyFromDate(todayKey));
+                            setSelectedCalendarDate(todayKey);
+                          }}
+                        >
+                          오늘
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="다음 달"
+                          onClick={() =>
+                            showCalendarMonth(shiftMonth(calendarMonth, 1))
+                          }
+                        >
+                          ›
+                        </button>
+                      </div>
+
+                      <div className={styles.calendarPeriod}>
+                        <h2 aria-live="polite">
+                          {calendarMonth
+                            ? `${Number(calendarMonth.slice(0, 4))}년 ${Number(
+                                calendarMonth.slice(5, 7),
+                              )}월`
+                            : "날짜 정보 없음"}
+                        </h2>
+                        <div
+                          className={styles.calendarPeriodSelects}
+                          aria-label="달력 연도와 월 선택"
+                        >
+                          <label>
+                            <span>연도</span>
+                            <select
+                              aria-label="연도 선택"
+                              value={calendarMonth.slice(0, 4)}
+                              onChange={(event) =>
+                                showCalendarMonth(
+                                  `${event.target.value}-${
+                                    calendarMonth.slice(5, 7) || "01"
+                                  }`,
+                                )
+                              }
+                            >
+                              {calendarYears.map((year) => (
+                                <option key={year} value={year}>
+                                  {year}년
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            <span>월</span>
+                            <select
+                              aria-label="월 선택"
+                              value={calendarMonth.slice(5, 7)}
+                              onChange={(event) =>
+                                showCalendarMonth(
+                                  `${
+                                    calendarMonth.slice(0, 4) ||
+                                    new Date().getFullYear()
+                                  }-${event.target.value}`,
+                                )
+                              }
+                            >
+                              {Array.from({ length: 12 }, (_, index) => {
+                                const month = String(index + 1).padStart(2, "0");
+                                return (
+                                  <option key={month} value={month}>
+                                    {index + 1}월
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div
+                        className={styles.calendarViewSwitch}
+                        role="group"
+                        aria-label="달력 보기 방식"
                       >
-                        ‹
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCalendarMonth(monthKeyFromDate(todayKey));
-                          setSelectedCalendarDate(todayKey);
-                        }}
-                      >
-                        오늘
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="다음 달"
-                        onClick={() =>
-                          setCalendarMonth((current) => shiftMonth(current, 1))
-                        }
-                      >
-                        ›
-                      </button>
+                        <button
+                          type="button"
+                          className={
+                            calendarDisplay === "month"
+                              ? styles.calendarViewSelected
+                              : ""
+                          }
+                          aria-pressed={calendarDisplay === "month"}
+                          onClick={() => setCalendarDisplay("month")}
+                        >
+                          월간 보기
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            calendarDisplay === "list"
+                              ? styles.calendarViewSelected
+                              : ""
+                          }
+                          aria-pressed={calendarDisplay === "list"}
+                          onClick={() => setCalendarDisplay("list")}
+                        >
+                          목록 보기
+                        </button>
+                      </div>
                     </div>
-                    <h2>
-                      {calendarMonth
-                        ? `${Number(calendarMonth.slice(0, 4))}년 ${Number(
-                            calendarMonth.slice(5, 7),
-                          )}월`
-                        : "날짜 정보 없음"}
-                    </h2>
-                    <div className={styles.calendarLegend}>
+
+                    <div className={styles.calendarToolbarFoot}>
                       <span>
-                        <i className={styles.legendCandidate} />
-                        시행일 후보
+                        파일명과 수정일은 단서이며, 확인한 날짜만 실제 시행일입니다.
                       </span>
-                      <span>
-                        <i className={styles.legendModified} />
-                        파일 수정일
-                      </span>
-                      <span>
-                        <i className={styles.legendConfirmed} />
-                        사용자 확인
-                      </span>
+                      <div className={styles.calendarLegend}>
+                        <span>
+                          <i className={styles.legendCandidate} />
+                          시행일 후보
+                        </span>
+                        <span>
+                          <i className={styles.legendModified} />
+                          파일 수정일
+                        </span>
+                        <span>
+                          <i className={styles.legendConfirmed} />
+                          사용자 확인
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className={styles.calendarTableWrap}>
-                    <table className={styles.calendarTable}>
+                  {calendarDisplay === "month" ? (
+                    <>
+                      <div className={styles.calendarTableWrap}>
+                        <table className={styles.calendarTable}>
                       <caption className={styles.visuallyHidden}>
                         {calendarMonth} 시행일 후보 달력
                       </caption>
@@ -1366,96 +1556,208 @@ ${aiContext(analysis, scheduleOverrides)}`,
                           ),
                         )}
                       </tbody>
-                    </table>
-                  </div>
-
-                  <section className={styles.dayAgenda}>
-                    <div className={styles.dayAgendaHeading}>
-                      <div>
-                        <strong>
-                          {selectedCalendarDate
-                            ? formatDateKey(selectedCalendarDate)
-                            : "날짜를 선택하세요"}
-                        </strong>
-                        <small>
-                          후보와 수정일을 비교한 뒤 실제 시행일을 확인하세요.
-                        </small>
+                        </table>
                       </div>
-                      <span>
-                        {new Set([
-                          ...selectedCalendarEvidence.filename,
-                          ...selectedCalendarEvidence.modified,
-                          ...selectedCalendarEvidence.confirmed,
-                        ]).size}
-                        건
-                      </span>
-                    </div>
-                    <div className={styles.agendaList}>
-                      {selectedCalendarEvidence.confirmed.map((file) => (
-                        <button
-                          type="button"
-                          className={styles.agendaConfirmed}
-                          key={`confirmed-${file.relativePath}`}
-                          onClick={() =>
-                            selectCalendarFile(file, selectedCalendarDate)
-                          }
-                        >
-                          <span>확인</span>
+
+                      <section className={styles.dayAgenda}>
+                        <div className={styles.dayAgendaHeading}>
+                          <div>
+                            <strong>
+                              {selectedCalendarDate
+                                ? formatDateKey(selectedCalendarDate)
+                                : "날짜를 선택하세요"}
+                            </strong>
+                            <small>
+                              후보와 수정일을 비교한 뒤 실제 시행일을 확인하세요.
+                            </small>
+                          </div>
                           <span>
-                            <strong>{file.branchLabel}</strong>
-                            <small>{file.name}</small>
+                            {new Set([
+                              ...selectedCalendarEvidence.filename,
+                              ...selectedCalendarEvidence.modified,
+                              ...selectedCalendarEvidence.confirmed,
+                            ]).size}
+                            건
                           </span>
-                        </button>
-                      ))}
-                      {selectedCalendarEvidence.filename.map((file) => {
-                        const candidate = file.dateCandidates.find(
-                          (item) => item.date === selectedCalendarDate,
-                        );
-                        return (
-                          <button
-                            type="button"
-                            className={styles.agendaCandidate}
-                            key={`candidate-${file.relativePath}`}
-                            onClick={() =>
-                              selectCalendarFile(file, selectedCalendarDate)
-                            }
-                          >
-                            <span>후보</span>
-                            <span>
-                              <strong>{file.branchLabel}</strong>
-                              <small>
-                                {candidate?.raw} ·{" "}
-                                {dateContextLabel(
-                                  candidate?.contextHint ?? "unknown",
-                                )}
-                              </small>
-                            </span>
-                          </button>
-                        );
-                      })}
-                      {selectedCalendarEvidence.modified.map((file) => (
-                        <button
-                          type="button"
-                          className={styles.agendaModified}
-                          key={`modified-${file.relativePath}`}
-                          onClick={() =>
-                            selectCalendarFile(file, selectedCalendarDate)
-                          }
+                        </div>
+                        <div className={styles.agendaList}>
+                          {selectedCalendarEvidence.confirmed.map((file) => (
+                            <button
+                              type="button"
+                              className={styles.agendaConfirmed}
+                              key={`confirmed-${file.relativePath}`}
+                              onClick={() =>
+                                selectCalendarFile(file, selectedCalendarDate)
+                              }
+                            >
+                              <span>확인</span>
+                              <span>
+                                <strong>{file.branchLabel}</strong>
+                                <small>{file.name}</small>
+                              </span>
+                            </button>
+                          ))}
+                          {selectedCalendarEvidence.filename.map((file) => {
+                            const candidate = file.dateCandidates.find(
+                              (item) => item.date === selectedCalendarDate,
+                            );
+                            return (
+                              <button
+                                type="button"
+                                className={styles.agendaCandidate}
+                                key={`candidate-${file.relativePath}`}
+                                onClick={() =>
+                                  selectCalendarFile(file, selectedCalendarDate)
+                                }
+                              >
+                                <span>후보</span>
+                                <span>
+                                  <strong>{file.branchLabel}</strong>
+                                  <small>
+                                    {candidate?.raw} ·{" "}
+                                    {dateContextLabel(
+                                      candidate?.contextHint ?? "unknown",
+                                    )}
+                                  </small>
+                                </span>
+                              </button>
+                            );
+                          })}
+                          {selectedCalendarEvidence.modified.map((file) => (
+                            <button
+                              type="button"
+                              className={styles.agendaModified}
+                              key={`modified-${file.relativePath}`}
+                              onClick={() =>
+                                selectCalendarFile(file, selectedCalendarDate)
+                              }
+                            >
+                              <span>수정</span>
+                              <span>
+                                <strong>{file.branchLabel}</strong>
+                                <small>{file.name}</small>
+                              </span>
+                            </button>
+                          ))}
+                          {!selectedCalendarEvidence.confirmed.length &&
+                            !selectedCalendarEvidence.filename.length &&
+                            !selectedCalendarEvidence.modified.length && (
+                              <p>이 날짜에는 발견된 단서가 없습니다.</p>
+                            )}
+                        </div>
+                      </section>
+                    </>
+                  ) : (
+                    <section
+                      className={styles.calendarList}
+                      aria-label={`${calendarMonth} 일정 목록`}
+                    >
+                      {calendarListDates.map(({ date, evidence, items }) => (
+                        <article
+                          className={[
+                            styles.calendarListDate,
+                            selectedCalendarDate === date
+                              ? styles.calendarListDateSelected
+                              : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          key={date}
                         >
-                          <span>수정</span>
-                          <span>
-                            <strong>{file.branchLabel}</strong>
-                            <small>{file.name}</small>
-                          </span>
-                        </button>
+                          <div className={styles.calendarListDateHeading}>
+                           <button
+                             type="button"
+                              onClick={() => {
+                                setSelectedCalendarDate(date);
+                                if (items[0]) {
+                                  setSelectedFilePath(
+                                    items[0].file.relativePath,
+                                  );
+                                  setSelectedBranchId(items[0].file.branchId);
+                                }
+                              }}
+                            >
+                              <span className={styles.calendarListDay}>
+                                <strong>{Number(date.slice(8, 10))}</strong>
+                                <small>
+                                  {
+                                    formatCalendarListDate(date).split(" ").at(-1)
+                                  }
+                                </small>
+                              </span>
+                              <span>
+                                <strong>{formatCalendarListDate(date)}</strong>
+                                <small>
+                                  후보 {evidence.filename.length} · 수정{" "}
+                                  {evidence.modified.length} · 확인{" "}
+                                  {evidence.confirmed.length}
+                                </small>
+                              </span>
+                              <b>{items.length}개 파일</b>
+                            </button>
+                          </div>
+                          <div className={styles.calendarListItems}>
+                            {items.map(({ file, kinds }) => (
+                              <button
+                                type="button"
+                                className={
+                                  selectedCalendarDate === date &&
+                                  selectedFile?.relativePath === file.relativePath
+                                    ? styles.calendarListItemSelected
+                                    : ""
+                                }
+                                key={file.relativePath}
+                                title={file.relativePath}
+                                onClick={() => selectCalendarFile(file, date)}
+                              >
+                                <span className={styles.calendarListKinds}>
+                                  {kinds.map((kind) => (
+                                    <i
+                                      className={
+                                        kind === "confirmed"
+                                          ? styles.listKindConfirmed
+                                          : kind === "filename"
+                                            ? styles.listKindCandidate
+                                            : styles.listKindModified
+                                      }
+                                      key={kind}
+                                    >
+                                      {kind === "confirmed"
+                                        ? "확인"
+                                        : kind === "filename"
+                                          ? "후보"
+                                          : "수정"}
+                                    </i>
+                                  ))}
+                                </span>
+                                <span className={styles.calendarListFile}>
+                                  <strong>
+                                    {file.analysisTitle || "제목 단서 부족"}
+                                  </strong>
+                                  <small>
+                                    {file.branchLabel} · {file.name}
+                                  </small>
+                                </span>
+                                <span className={styles.calendarListOpen}>
+                                  미리보기 ›
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </article>
                       ))}
-                      {!selectedCalendarEvidence.confirmed.length &&
-                        !selectedCalendarEvidence.filename.length &&
-                        !selectedCalendarEvidence.modified.length && (
-                          <p>이 날짜에는 발견된 단서가 없습니다.</p>
-                        )}
-                    </div>
-                  </section>
+                      {!calendarListDates.length && (
+                        <div className={styles.calendarListEmpty}>
+                          <span className={styles.calendarHeadingIcon}>31</span>
+                          <strong>이 달에는 날짜 단서가 없습니다.</strong>
+                          <p>
+                            다른 연·월을 선택하거나 파일명과 수정일을 다시
+                            확인하세요.
+                          </p>
+                        </div>
+                      )}
+                    </section>
+                  )}
                 </section>
               </>
             ) : (
