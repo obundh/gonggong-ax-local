@@ -17,20 +17,6 @@ HWP·HWPX·DOCX·TXT 문서를 외부 서버로 보내지 않고, Windows PC 안
 
 ![공공AX 로컬 시리즈 2 실제 맞춤법 필터 화면](public/threads/actual-app-spelling-filter.png)
 
-## 문서 수사대 Threads 만화
-
-애기 고양이가 문제 분석부터 실제 화면 검증까지 진행하는
-`문서 수사대` 콘셉트의 5장짜리 Threads 캐러셀입니다.
-
-<p>
-  <img src="public/threads/threads-01-cover.jpg" width="19%" alt="문서 수사대 애기 고양이의 최초 문제 분석" />
-  <img src="public/threads/threads-02-problem.jpg" width="19%" alt="문서 오류 종류를 현장 감식하는 애기 고양이" />
-  <img src="public/threads/threads-03-solution.jpg" width="19%" alt="로컬 문서 감식실을 설명하는 애기 고양이" />
-  <img src="public/threads/threads-04-actual-screen.jpg" width="19%" alt="실제 문서 검수 화면을 증거로 보여주는 애기 고양이" />
-  <img src="public/threads/threads-05-result.jpg" width="19%" alt="자동 수정과 사람 판단을 분리하는 문서 수사대" />
-</p>
-
-[Threads 게시용 본문과 이미지 순서](docs/THREADS_POST.md)
 
 ## 내려받기
 
