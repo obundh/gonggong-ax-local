@@ -52,6 +52,8 @@ export default function Home() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
+  const [discoveryOpen, setDiscoveryOpen] = useState(false);
+  const [discoveryState, setDiscoveryState] = useState<"idle" | "scanning" | "waiting">("idle");
   const [workspace, setWorkspace] = useState("새 업무");
   const [files, setFiles] = useState([
     { name: "2026년 업무계획.pdf", pages: "12쪽" },
@@ -113,6 +115,13 @@ export default function Home() {
     setLeftOpen(false);
   };
 
+  const openDiscovery = () => {
+    setModelOpen(false);
+    setDiscoveryOpen(true);
+    setDiscoveryState("scanning");
+    window.setTimeout(() => setDiscoveryState("waiting"), 1100);
+  };
+
   return (
     <main className="app-shell">
       <aside className={`left-sidebar ${leftOpen ? "is-open" : ""}`}>
@@ -123,8 +132,8 @@ export default function Home() {
             <span />
           </div>
           <div>
-            <strong>갈라파고스</strong>
-            <small>공공 AI 워크스페이스</small>
+            <strong>공공 AX 로컬 시리즈 1</strong>
+            <small>공공업무 로컬 AI</small>
           </div>
           <button
             className="icon-button sidebar-close"
@@ -211,6 +220,10 @@ export default function Home() {
             <span className="chevron">⌄</span>
           </button>
           <div className="topbar-actions">
+            <button className="discover-button" onClick={openDiscovery}>
+              <span className="radar-icon" aria-hidden="true"><i /></span>
+              로컬 LLM 찾기
+            </button>
             <div className="model-picker">
               <button
                 className="model-button"
@@ -282,7 +295,7 @@ export default function Home() {
                   </div>
                   <div className="message-content">
                     <div className="message-author">
-                      {message.role === "assistant" ? "갈라파고스" : "김담당"}
+                      {message.role === "assistant" ? "로컬 AI" : "김담당"}
                     </div>
                     <p>{message.text}</p>
                     {message.sources && (
@@ -324,7 +337,7 @@ export default function Home() {
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              placeholder="갈라파고스에게 업무를 요청하세요"
+              placeholder="로컬 AI에게 업무를 요청하세요"
               aria-label="메시지 입력"
             />
             <div className="composer-bottom">
@@ -417,6 +430,55 @@ export default function Home() {
           <div className="memory-label"><span>메모리 사용량</span><strong>4.8 / 16 GB</strong></div>
         </div>
       </aside>
+
+      {discoveryOpen && (
+        <div className="discovery-overlay" role="presentation" onMouseDown={() => setDiscoveryOpen(false)}>
+          <section
+            className="discovery-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discovery-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="discovery-header">
+              <div className="discovery-mark"><span /><i /></div>
+              <div>
+                <span className="eyebrow">내 PC에서 자동 검색</span>
+                <h2 id="discovery-title">로컬 LLM 찾기</h2>
+              </div>
+              <button className="icon-button" aria-label="로컬 LLM 찾기 닫기" onClick={() => setDiscoveryOpen(false)}>×</button>
+            </div>
+
+            {discoveryState === "scanning" ? (
+              <div className="discovery-scanning">
+                <div className="scan-orbit"><span>◆</span><i /><b /></div>
+                <strong>로컬 AI 환경을 확인하고 있습니다</strong>
+                <p>Ollama, LM Studio, llama.cpp와 모델 폴더를 순서대로 살펴봅니다.</p>
+                <div className="scan-progress"><span /></div>
+              </div>
+            ) : (
+              <>
+                <div className="bridge-notice">
+                  <span>!</span>
+                  <div>
+                    <strong>로컬 탐색 연결이 필요합니다</strong>
+                    <p>웹 화면은 준비됐습니다. 다음 단계에서 로컬 에이전트를 연결하면 이 PC의 모델을 실제로 찾아옵니다.</p>
+                  </div>
+                </div>
+                <div className="discovery-targets">
+                  <div><span className="target-icon">O</span><span><strong>Ollama</strong><small>설치 모델과 실행 상태 확인</small></span><b>대기</b></div>
+                  <div><span className="target-icon lm">LM</span><span><strong>LM Studio</strong><small>다운로드 모델과 서버 확인</small></span><b>대기</b></div>
+                  <div><span className="target-icon cpp">C</span><span><strong>llama.cpp · GGUF</strong><small>실행 서버와 지정 폴더 확인</small></span><b>대기</b></div>
+                </div>
+                <div className="discovery-actions">
+                  <button className="secondary-action" onClick={() => setDiscoveryOpen(false)}>닫기</button>
+                  <button className="primary-action" onClick={openDiscovery}>다시 찾기</button>
+                </div>
+              </>
+            )}
+          </section>
+        </div>
+      )}
     </main>
   );
 }
