@@ -9,6 +9,40 @@ type Message = {
   sources?: string[];
 };
 
+type LocalModel = {
+  id: string;
+  label: string;
+  runtime: "Ollama";
+  sizeBytes: number;
+  parameterSize: string;
+  quantization: string;
+  family: string;
+};
+
+type OllamaTagsResponse = {
+  models?: Array<{
+    name?: string;
+    model?: string;
+    size?: number;
+    details?: {
+      family?: string;
+      parameter_size?: string;
+      quantization_level?: string;
+    };
+  }>;
+};
+
+const formatBytes = (bytes: number) => {
+  if (!bytes) return "크기 정보 없음";
+  return `${(bytes / 1_000_000_000).toFixed(1)}GB`;
+};
+
+const formatModelLabel = (id: string) => {
+  const match = id.match(/^gemma4:(e\d+b)$/i);
+  if (match) return `Gemma 4 ${match[1].toUpperCase()}`;
+  return id;
+};
+
 const recentWorks = [
   { title: "지역상권 활성화 검토", meta: "오늘 · 자료 4개" },
   { title: "청년정책 추진계획 요약", meta: "어제 · 자료 7개" },
@@ -53,7 +87,18 @@ export default function Home() {
   const [rightOpen, setRightOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
-  const [discoveryState, setDiscoveryState] = useState<"idle" | "scanning" | "waiting">("idle");
+  const [discoveryState, setDiscoveryState] = useState<"idle" | "scanning" | "found" | "error">("idle");
+  const [discoveryError, setDiscoveryError] = useState("");
+  const [discoveredModels, setDiscoveredModels] = useState<LocalModel[]>([]);
+  const [activeModel, setActiveModel] = useState<LocalModel>({
+    id: "gemma4:e2b",
+    label: "Gemma 4 E2B",
+    runtime: "Ollama",
+    sizeBytes: 0,
+    parameterSize: "5.1B",
+    quantization: "Q4",
+    family: "gemma4",
+  });
   const [workspace, setWorkspace] = useState("새 업무");
   const [files, setFiles] = useState([
     { name: "2026년 업무계획.pdf", pages: "12쪽" },
@@ -115,11 +160,76 @@ export default function Home() {
     setLeftOpen(false);
   };
 
-  const openDiscovery = () => {
+  const openDiscovery = async () => {
     setModelOpen(false);
     setDiscoveryOpen(true);
     setDiscoveryState("scanning");
-    window.setTimeout(() => setDiscoveryState("waiting"), 1100);
+    setDiscoveryError("");
+
+    const endpoints = [
+      "http://127.0.0.1:11434/api/tags",
+      "http://localhost:11434/api/tags",
+    ];
+    let lastError = "Ollama가 실행 중인지 확인해주세요.";
+
+    for (const endpoint of endpoints) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 3500);
+      try {
+        const response = await fetch(endpoint, {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          lastError = `Ollama가 요청을 거부했습니다. (${response.status})`;
+          continue;
+        }
+
+        const payload = (await response.json()) as OllamaTagsResponse;
+        const models = (payload.models ?? [])
+          .filter((model) => model.name || model.model)
+          .map((model) => {
+            const id = model.name || model.model || "unknown";
+            return {
+              id,
+              label: formatModelLabel(id),
+              runtime: "Ollama" as const,
+              sizeBytes: model.size ?? 0,
+              parameterSize: model.details?.parameter_size ?? "정보 없음",
+              quantization: model.details?.quantization_level ?? "정보 없음",
+              family: model.details?.family ?? "unknown",
+            };
+          })
+          .sort((a, b) => {
+            const aGemma4 = a.family.toLowerCase() === "gemma4" ? 0 : 1;
+            const bGemma4 = b.family.toLowerCase() === "gemma4" ? 0 : 1;
+            return aGemma4 - bGemma4 || a.label.localeCompare(b.label);
+          });
+
+        setDiscoveredModels(models);
+        setDiscoveryState(models.length > 0 ? "found" : "error");
+        if (models.length === 0) {
+          setDiscoveryError("Ollama는 연결됐지만 설치된 모델이 없습니다.");
+        }
+        return;
+      } catch (error) {
+        lastError =
+          error instanceof Error && error.name === "AbortError"
+            ? "Ollama 응답 시간이 초과됐습니다."
+            : "현재 웹 주소에서는 이 PC의 Ollama에 연결할 수 없습니다.";
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
+    setDiscoveryError(lastError);
+    setDiscoveryState("error");
+  };
+
+  const useLocalModel = (model: LocalModel) => {
+    setActiveModel(model);
+    setDiscoveryOpen(false);
+    setModelOpen(false);
   };
 
   return (
@@ -231,18 +341,26 @@ export default function Home() {
                 onClick={() => setModelOpen((open) => !open)}
               >
                 <span className="model-gem">◆</span>
-                <span><strong>Gemma 4 E2B</strong><small>빠른 응답</small></span>
+                <span><strong>{activeModel.label}</strong><small>{activeModel.runtime} · 로컬</small></span>
                 <span className="chevron">⌄</span>
               </button>
               {modelOpen && (
                 <div className="model-menu">
                   <div className="model-menu-label">로컬 모델</div>
-                  <button className="selected">
-                    <span>◆</span><span><strong>Gemma 4 E2B</strong><small>현재 PC에 최적화</small></span><b>✓</b>
-                  </button>
-                  <button disabled>
-                    <span>◇</span><span><strong>Gemma 4 E4B</strong><small>추가 설치 필요</small></span>
-                  </button>
+                  {(discoveredModels.length > 0 ? discoveredModels : [activeModel]).map((model) => (
+                    <button
+                      className={model.id === activeModel.id ? "selected" : ""}
+                      key={model.id}
+                      onClick={() => useLocalModel(model)}
+                    >
+                      <span>{model.id === activeModel.id ? "◆" : "◇"}</span>
+                      <span>
+                        <strong>{model.label}</strong>
+                        <small>{model.runtime} · {formatBytes(model.sizeBytes)}</small>
+                      </span>
+                      {model.id === activeModel.id && <b>✓</b>}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -425,9 +543,11 @@ export default function Home() {
         </section>
 
         <div className="device-card">
-          <div className="device-title"><span>◆</span><strong>Gemma 4 E2B</strong><small>Q4 · CPU</small></div>
-          <div className="memory-bar"><span /></div>
-          <div className="memory-label"><span>메모리 사용량</span><strong>4.8 / 16 GB</strong></div>
+          <div className="device-title"><span>◆</span><strong>{activeModel.label}</strong><small>{activeModel.quantization} · CPU</small></div>
+          <div className="memory-bar">
+            <span style={{ width: `${Math.min(90, Math.max(18, (activeModel.sizeBytes / 16_000_000_000) * 100))}%` }} />
+          </div>
+          <div className="memory-label"><span>모델 파일</span><strong>{formatBytes(activeModel.sizeBytes)}</strong></div>
         </div>
       </aside>
 
@@ -456,17 +576,50 @@ export default function Home() {
                 <p>Ollama, LM Studio, llama.cpp와 모델 폴더를 순서대로 살펴봅니다.</p>
                 <div className="scan-progress"><span /></div>
               </div>
+            ) : discoveryState === "found" ? (
+              <>
+                <div className="discovery-success">
+                  <span>✓</span>
+                  <div>
+                    <strong>Ollama에서 {discoveredModels.length}개 모델을 찾았습니다</strong>
+                    <p>사용할 모델을 선택하면 상단 모델과 현재 업무공간에 바로 반영됩니다.</p>
+                  </div>
+                </div>
+                <div className="discovery-model-list">
+                  {discoveredModels.map((model) => (
+                    <div className={`discovered-model ${model.id === activeModel.id ? "active" : ""}`} key={model.id}>
+                      <span className="discovered-model-icon">◆</span>
+                      <span>
+                        <strong>{model.label}</strong>
+                        <small>{model.id} · {model.parameterSize} · {model.quantization} · {formatBytes(model.sizeBytes)}</small>
+                      </span>
+                      <button onClick={() => useLocalModel(model)}>
+                        {model.id === activeModel.id ? "사용 중" : "사용"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="discovery-targets compact">
+                  <div><span className="target-icon">O</span><span><strong>Ollama</strong><small>설치 모델 검색 완료</small></span><b className="connected">연결됨</b></div>
+                  <div><span className="target-icon lm">LM</span><span><strong>LM Studio</strong><small>다음 연결 대상</small></span><b>준비 중</b></div>
+                  <div><span className="target-icon cpp">C</span><span><strong>llama.cpp · GGUF</strong><small>다음 연결 대상</small></span><b>준비 중</b></div>
+                </div>
+                <div className="discovery-actions">
+                  <button className="secondary-action" onClick={() => setDiscoveryOpen(false)}>닫기</button>
+                  <button className="primary-action" onClick={openDiscovery}>다시 찾기</button>
+                </div>
+              </>
             ) : (
               <>
                 <div className="bridge-notice">
                   <span>!</span>
                   <div>
-                    <strong>로컬 탐색 연결이 필요합니다</strong>
-                    <p>웹 화면은 준비됐습니다. 다음 단계에서 로컬 에이전트를 연결하면 이 PC의 모델을 실제로 찾아옵니다.</p>
+                    <strong>로컬 LLM을 찾지 못했습니다</strong>
+                    <p>{discoveryError}</p>
                   </div>
                 </div>
                 <div className="discovery-targets">
-                  <div><span className="target-icon">O</span><span><strong>Ollama</strong><small>설치 모델과 실행 상태 확인</small></span><b>대기</b></div>
+                  <div><span className="target-icon">O</span><span><strong>Ollama</strong><small>기본 주소 11434 연결 실패</small></span><b>확인 필요</b></div>
                   <div><span className="target-icon lm">LM</span><span><strong>LM Studio</strong><small>다운로드 모델과 서버 확인</small></span><b>대기</b></div>
                   <div><span className="target-icon cpp">C</span><span><strong>llama.cpp · GGUF</strong><small>실행 서버와 지정 폴더 확인</small></span><b>대기</b></div>
                 </div>

@@ -1510,9 +1510,127 @@ kbd {
   line-height: 1.5;
 }
 
+.discovery-success {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  margin: 17px 0 11px;
+  border: 1px solid #d7e8de;
+  border-radius: 11px;
+  background: #eff8f3;
+  padding: 11px;
+}
+
+.discovery-success > span {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 8px;
+  background: #d8eddf;
+  color: #24704e;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.discovery-success strong {
+  display: block;
+  color: #265a42;
+  font-size: 9px;
+}
+
+.discovery-success p {
+  margin: 4px 0 0;
+  color: #667d70;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.discovery-model-list {
+  display: grid;
+  max-height: 220px;
+  gap: 4px;
+  overflow-y: auto;
+  padding: 2px 1px;
+}
+
+.discovered-model {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #e6e9e6;
+  border-radius: 11px;
+  padding: 9px;
+  background: #fff;
+}
+
+.discovered-model.active {
+  border-color: #b9d2c3;
+  background: #f5faf7;
+}
+
+.discovered-model-icon {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  background: #e6f2eb;
+  color: #2d7655;
+  font-size: 11px;
+}
+
+.discovered-model strong,
+.discovered-model small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discovered-model strong {
+  font-size: 9px;
+}
+
+.discovered-model small {
+  margin-top: 4px;
+  color: #8d9690;
+  font-size: 7px;
+}
+
+.discovered-model button {
+  min-width: 45px;
+  height: 27px;
+  border: 1px solid #cbdcd2;
+  border-radius: 8px;
+  background: #eff7f2;
+  color: #2f704f;
+  font-size: 8px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.discovered-model.active button {
+  border-color: #dfe5e1;
+  background: #e9edeb;
+  color: #7a837e;
+}
+
 .discovery-targets {
   display: grid;
   gap: 3px;
+}
+
+.discovery-targets.compact {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e7eae7;
+}
+
+.discovery-targets b.connected {
+  background: #e2f2e8;
+  color: #347454;
 }
 
 .discovery-targets > div {
