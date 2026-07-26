@@ -14,7 +14,8 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "desktop:dir": "npm run build && electron-builder --dir",
-    "desktop:build": "npm run build && node scripts/build-desktop.mjs"
+    "desktop:build": "npm run build && node scripts/build-desktop.mjs",
+    "media:threads": "node scripts/build-threads-comic.mjs"
   },
   "dependencies": {
     "@rhwp/core": "^0.8.0",
@@ -38,6 +39,7 @@
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "react-server-dom-webpack": "19.2.8",
+    "sharp": "0.35.3",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",

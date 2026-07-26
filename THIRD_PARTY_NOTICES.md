@@ -28,10 +28,15 @@
 | electron-builder | 26.15.3 | MIT | 포터블 EXE 패키징 |
 | vinext | 0.0.50 | MIT | 애플리케이션 빌드 |
 | TypeScript | 5.9.3 | Apache-2.0 | 개발·빌드 |
+| Sharp | 0.35.3 | Apache-2.0 | 게시용 이미지 크기 조정·조합 |
 
 JSZip은 이 프로젝트에서 GPL이 아닌 MIT 선택지로 사용합니다. 각 npm 패키지에
 포함된 LICENSE 파일과 배포물의 Electron/Chromium 라이선스 문서에 전체 조건과
 저작권 고지가 있습니다.
+
+Sharp의 빌드 환경에는 LGPL-3.0-or-later 조건의 libvips 배포물이 전이 의존성으로
+설치될 수 있습니다. 게시용 이미지를 만드는 개발 도구로만 사용하며 Sharp,
+libvips 또는 `node_modules`는 포터블 EXE에 포함하지 않습니다.
 
 ## MIT 라이선스 공통 조건 요약
 

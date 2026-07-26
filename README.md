@@ -5,6 +5,32 @@ HWP·HWPX·DOCX·TXT 문서를 외부 서버로 보내지 않고, Windows PC 안
 
 ![공공AX 로컬 시리즈 2 문서 검수 사용 화면](public/document-review-hero.png)
 
+## 실제 구동 화면
+
+아래 이미지는 생성형 UI가 아니라 `http://localhost:3000/series2`에서 직접 캡처한
+실제 실행 화면입니다.
+
+![공공AX 로컬 시리즈 2 실제 전체 검사 화면](public/threads/actual-app-overview.png)
+
+`맞춤법`만 누르면 원문 형광펜과 오른쪽 검사 결과가 함께 맞춤법 항목으로
+좁혀집니다.
+
+![공공AX 로컬 시리즈 2 실제 맞춤법 필터 화면](public/threads/actual-app-spelling-filter.png)
+
+## 고양이 주무관 Threads 만화
+
+Threads에서 순서대로 넘겨볼 수 있는 5장짜리 캐러셀입니다.
+
+<p>
+  <img src="public/threads/threads-01-cover.jpg" width="19%" alt="고양이 주무관 문서 검수 만화 표지" />
+  <img src="public/threads/threads-02-problem.jpg" width="19%" alt="문서 검사 문제를 설명하는 고양이" />
+  <img src="public/threads/threads-03-solution.jpg" width="19%" alt="로컬 문서 검수를 설명하는 고양이" />
+  <img src="public/threads/threads-04-actual-screen.jpg" width="19%" alt="실제 문서 검수 화면" />
+  <img src="public/threads/threads-05-result.jpg" width="19%" alt="사람의 최종 검토를 설명하는 고양이" />
+</p>
+
+[Threads 게시용 본문과 이미지 순서](docs/THREADS_POST.md)
+
 ## 내려받기
 
 [최신 Windows 실행파일](../../releases/latest)을 내려받아

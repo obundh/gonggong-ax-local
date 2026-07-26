@@ -49,12 +49,17 @@ Next.js, React, React DOM, React Server DOM, PostCSS, Sharp는 감사 결과에 
 
 ## 생성형 안내 이미지
 
-`public/document-review-hero.png`는 OpenAI 이미지 생성 기능으로 이 프로젝트를
-위해 새로 만들었습니다. OpenAI 이용약관은 OpenAI와 사용자 사이에서는, 관련 법이
-허용하는 범위에서 출력의 권리를 사용자에게 귀속·양도한다고 설명합니다. 다만
-생성 결과는 고유하지 않을 수 있고, 국가별로 순수 AI 생성물의 저작권 보호 여부가
-달라질 수 있습니다. 이미지에는 식별 가능한 외부 로고·상표·워터마크를 넣지
-않았습니다.
+`public/document-review-hero.png`와 `public/threads/source-*.png`는 OpenAI
+이미지 생성 기능으로 이 프로젝트를 위해 새로 만들었습니다.
+`public/threads/threads-*.jpg`는 생성 그림, 정확한 한국어 대사, 실제 구동 화면을
+로컬에서 조합한 게시용 캐러셀입니다. OpenAI 이용약관은 OpenAI와 사용자
+사이에서는, 관련 법이 허용하는 범위에서 출력의 권리를 사용자에게 귀속·양도한다고
+설명합니다. 다만 생성 결과는 고유하지 않을 수 있고, 국가별로 순수 AI 생성물의
+저작권 보호 여부가 달라질 수 있습니다. 이미지에는 식별 가능한 외부 로고·상표·
+워터마크를 넣지 않았습니다.
+
+실제 화면 캡처에는 프로젝트에 내장된 예시 문서만 사용했으며 개인정보나 기관
+비공개 문서를 포함하지 않습니다.
 
 - OpenAI 이용약관: <https://openai.com/policies/terms-of-use/>
 
