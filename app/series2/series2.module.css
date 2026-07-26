@@ -661,6 +661,71 @@
   font-weight: 800;
 }
 
+.previewViewBar {
+  display: flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #ded8ce;
+  background: #fffdf8;
+  padding: 6px 11px;
+}
+
+.previewViewTabs {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  border: 1px solid #d7d0c6;
+  border-radius: 8px;
+  background: #f1ece4;
+  padding: 3px;
+}
+
+.previewViewTabs button {
+  display: inline-flex;
+  height: 27px;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0 10px;
+  color: #7c776f;
+  font-size: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.previewViewTabs button:hover {
+  color: var(--navy-deep);
+}
+
+.previewViewTabs button.activePreviewView {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 2px 7px rgba(34, 46, 54, 0.16);
+}
+
+.previewViewTabs button span {
+  display: grid;
+  min-width: 15px;
+  height: 15px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--rust);
+  color: #fff;
+  font-size: 7px;
+}
+
+.previewViewBar > p {
+  margin: 0;
+  color: #8a847b;
+  font-size: 8px;
+  line-height: 1.45;
+  text-align: right;
+}
+
 .pageNavigator {
   display: grid;
   min-height: 48px;
@@ -794,6 +859,326 @@
   display: block;
   width: 100%;
   height: auto;
+}
+
+.comparePreview {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0)),
+    #dfddd8;
+  padding: 12px clamp(10px, 2vw, 22px) 40px;
+}
+
+.compareSummary {
+  display: flex;
+  max-width: 1080px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 auto 10px;
+  border: 1px solid #d3cbc0;
+  border-radius: 9px;
+  background: rgba(255, 253, 248, 0.96);
+  padding: 9px 10px;
+}
+
+.compareSummary > div:first-child {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.compareSummary > div:first-child > span {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.compareSummary p {
+  margin: 0;
+  color: #746f68;
+  font-size: 8px;
+  line-height: 1.55;
+}
+
+.compareSummary p strong {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--navy-deep);
+  font-size: 10px;
+}
+
+.compareLegend {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.compareLegend span {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 4px 6px;
+  font-size: 7px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.compareLegend .appliedLegend {
+  border-color: #b9cec9;
+  background: #edf5f2;
+  color: #316f67;
+}
+
+.compareLegend .safeLegend {
+  border-color: #a9cbc3;
+  background: #e2f1ed;
+  color: #1f6b61;
+}
+
+.compareLegend .reviewLegend {
+  border-color: #dac89d;
+  background: #f8efd8;
+  color: #85611d;
+}
+
+.compareLegend .unresolvedLegend {
+  border-color: #d5cec3;
+  background: #f1ece5;
+  color: #706b64;
+}
+
+.compareColumnHeaders {
+  display: grid;
+  max-width: 1080px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 auto 6px;
+}
+
+.compareColumnHeaders > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-radius: 7px 7px 0 0;
+  padding: 7px 9px;
+}
+
+.compareColumnHeaders > div:first-child {
+  background: #eee1dc;
+  color: #8b4f3d;
+}
+
+.compareColumnHeaders > div:last-child {
+  background: #dcece8;
+  color: #276b63;
+}
+
+.compareColumnHeaders span {
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.compareColumnHeaders strong {
+  font-size: 7px;
+  font-weight: 750;
+}
+
+.compareRows {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.compareRow {
+  display: grid;
+  grid-template-areas:
+    "meta meta"
+    "before after"
+    "suggestion suggestion";
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 10px;
+  border: 1px solid #cbc5bc;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 7px 20px rgba(34, 39, 41, 0.055);
+}
+
+.compareRow + .compareRow {
+  margin-top: 8px;
+}
+
+.compareRow.selectedCompareRow {
+  border-color: #7f9f9a;
+  box-shadow: 0 0 0 3px rgba(40, 119, 111, 0.11);
+}
+
+.compareLineMeta {
+  grid-area: meta;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ded8ce;
+  background: #f4f0e9;
+  padding: 6px 9px;
+}
+
+.compareLineMeta span {
+  color: #8c857c;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 7px;
+}
+
+.compareLineMeta strong {
+  color: #746e66;
+  font-size: 7px;
+}
+
+.changedCompareRow .compareLineMeta strong {
+  color: var(--rust);
+}
+
+.beforePane,
+.afterPane {
+  min-width: 0;
+  min-height: 74px;
+  padding: 13px 14px 16px;
+}
+
+.beforePane {
+  grid-area: before;
+  border-right: 1px dashed #d5cec4;
+  background: #fffaf7;
+}
+
+.afterPane {
+  grid-area: after;
+  background: #fbfffd;
+}
+
+.beforePane p,
+.afterPane p {
+  margin: 0;
+  color: #2f3a40;
+  font-family: "Noto Serif KR", NanumMyeongjo, Batang, serif;
+  font-size: 12px;
+  letter-spacing: -0.012em;
+  line-height: 1.85;
+  word-break: keep-all;
+}
+
+.compareRemoved,
+.compareAddedSafe,
+.compareAddedReview {
+  border-radius: 3px;
+  padding: 2px 1px;
+  color: inherit;
+}
+
+.compareRemoved {
+  background: #f4dcd4;
+  color: #914a37;
+  text-decoration: line-through;
+  text-decoration-color: #bf725d;
+}
+
+.compareAddedSafe {
+  background: #d9eee8;
+  color: #17685d;
+  box-shadow: inset 0 -2px 0 #4e9a8e;
+}
+
+.compareAddedReview {
+  background: #f7e9bd;
+  color: #755514;
+  box-shadow: inset 0 -2px 0 #c39a40;
+}
+
+.unchangedCompareRow {
+  box-shadow: none;
+}
+
+.unchangedCompareRow .beforePane,
+.unchangedCompareRow .afterPane {
+  color: #8d8880;
+  opacity: 0.72;
+}
+
+.compareSuggestionStrip {
+  grid-area: suggestion;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  border-top: 1px solid #dfd9cf;
+  background: #f6f2eb;
+  padding: 7px 9px;
+}
+
+.compareSuggestionStrip button {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d7d0c6;
+  border-radius: 7px;
+  background: #fffdf9;
+  padding: 5px 7px;
+  color: #625e58;
+  font-size: 7px;
+  cursor: pointer;
+}
+
+.compareSuggestionStrip button:hover,
+.compareSuggestionStrip button.activeCompareSuggestion {
+  border-color: #8da8a3;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(40, 119, 111, 0.08);
+}
+
+.compareSuggestionStrip b {
+  border-radius: 4px;
+  padding: 3px 4px;
+  font-size: 6px;
+}
+
+.compareSuggestionStrip b.safeSuggestion {
+  background: #dceee9;
+  color: #246b62;
+}
+
+.compareSuggestionStrip b.reviewSuggestion {
+  background: #f6e8bf;
+  color: #7c5b19;
+}
+
+.compareSuggestionStrip del {
+  overflow: hidden;
+  max-width: 130px;
+  color: #9b5846;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compareSuggestionStrip > button > span {
+  color: #aaa198;
+}
+
+.compareSuggestionStrip strong {
+  overflow: hidden;
+  max-width: 150px;
+  color: #276a62;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .paper {
@@ -1453,6 +1838,72 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px;
+  }
+
+  .previewViewBar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .previewViewBar > p {
+    text-align: left;
+  }
+
+  .compareSummary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .compareLegend {
+    justify-content: flex-start;
+  }
+
+  .compareColumnHeaders {
+    display: none;
+  }
+
+  .compareRow {
+    grid-template-areas:
+      "meta"
+      "before"
+      "after"
+      "suggestion";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .beforePane,
+  .afterPane {
+    position: relative;
+    padding-top: 33px;
+  }
+
+  .beforePane {
+    border-right: 0;
+    border-bottom: 1px dashed #d5cec4;
+  }
+
+  .beforePane::before,
+  .afterPane::before {
+    position: absolute;
+    top: 9px;
+    left: 14px;
+    border-radius: 4px;
+    padding: 3px 5px;
+    font-size: 7px;
+    font-weight: 850;
+  }
+
+  .beforePane::before {
+    content: "수정 전";
+    background: #eee1dc;
+    color: #8b4f3d;
+  }
+
+  .afterPane::before {
+    content: "수정 후 예상 · 확정 전";
+    background: #dcece8;
+    color: #276b63;
   }
 
   .paper {

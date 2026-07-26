@@ -48,6 +48,7 @@ test("server-renders the local public-document checker", async () => {
   assert.match(html, /HWP · HWPX · DOCX · TXT/);
   assert.match(html, /원문 페이지 이동/);
   assert.match(html, /쪽<\/strong> 검사 결과/);
+  assert.match(html, /전후 비교/);
   assert.match(html, /외부 전송 없음/);
   assert.match(html, /국립국어원 공공언어/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);

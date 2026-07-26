@@ -47,6 +47,11 @@ type HistoryItem = Finding & {
   chosenReplacement: string | null;
 };
 
+type DiffPart = {
+  type: "same" | "removed" | "added";
+  value: string;
+};
+
 const initialSample: ParsedDocument = createFlowDocument({
   name: "공공시설_안내_가이드.hwpx",
   format: "직접 입력",
@@ -93,9 +98,105 @@ function visiblePageNumbers(pageCount: number, currentPage: number) {
   return [...indexes].sort((left, right) => left - right);
 }
 
+function tokenizeForComparison(text: string) {
+  return text.match(/\s+|[가-힣ㄱ-ㅎㅏ-ㅣA-Za-z0-9]+|./gu) ?? [];
+}
+
+function fallbackDiff(before: string, after: string): DiffPart[] {
+  let prefixLength = 0;
+  while (
+    prefixLength < before.length &&
+    prefixLength < after.length &&
+    before[prefixLength] === after[prefixLength]
+  ) {
+    prefixLength += 1;
+  }
+
+  let beforeSuffix = before.length;
+  let afterSuffix = after.length;
+  while (
+    beforeSuffix > prefixLength &&
+    afterSuffix > prefixLength &&
+    before[beforeSuffix - 1] === after[afterSuffix - 1]
+  ) {
+    beforeSuffix -= 1;
+    afterSuffix -= 1;
+  }
+
+  return [
+    { type: "same", value: before.slice(0, prefixLength) },
+    { type: "removed", value: before.slice(prefixLength, beforeSuffix) },
+    { type: "added", value: after.slice(prefixLength, afterSuffix) },
+    { type: "same", value: before.slice(beforeSuffix) },
+  ].filter((part) => part.value.length > 0) as DiffPart[];
+}
+
+function compareText(before: string, after: string): DiffPart[] {
+  if (before === after) return [{ type: "same", value: before }];
+
+  const beforeTokens = tokenizeForComparison(before);
+  const afterTokens = tokenizeForComparison(after);
+  if (beforeTokens.length * afterTokens.length > 40_000) {
+    return fallbackDiff(before, after);
+  }
+
+  const table = Array.from({ length: beforeTokens.length + 1 }, () =>
+    new Uint16Array(afterTokens.length + 1),
+  );
+  for (let beforeIndex = beforeTokens.length - 1; beforeIndex >= 0; beforeIndex -= 1) {
+    for (let afterIndex = afterTokens.length - 1; afterIndex >= 0; afterIndex -= 1) {
+      table[beforeIndex][afterIndex] =
+        beforeTokens[beforeIndex] === afterTokens[afterIndex]
+          ? table[beforeIndex + 1][afterIndex + 1] + 1
+          : Math.max(
+              table[beforeIndex + 1][afterIndex],
+              table[beforeIndex][afterIndex + 1],
+            );
+    }
+  }
+
+  const parts: DiffPart[] = [];
+  const append = (type: DiffPart["type"], value: string) => {
+    const last = parts[parts.length - 1];
+    if (last?.type === type) last.value += value;
+    else parts.push({ type, value });
+  };
+
+  let beforeIndex = 0;
+  let afterIndex = 0;
+  while (beforeIndex < beforeTokens.length && afterIndex < afterTokens.length) {
+    if (beforeTokens[beforeIndex] === afterTokens[afterIndex]) {
+      append("same", beforeTokens[beforeIndex]);
+      beforeIndex += 1;
+      afterIndex += 1;
+    } else if (
+      table[beforeIndex + 1][afterIndex] >= table[beforeIndex][afterIndex + 1]
+    ) {
+      append("removed", beforeTokens[beforeIndex]);
+      beforeIndex += 1;
+    } else {
+      append("added", afterTokens[afterIndex]);
+      afterIndex += 1;
+    }
+  }
+  while (beforeIndex < beforeTokens.length) {
+    append("removed", beforeTokens[beforeIndex]);
+    beforeIndex += 1;
+  }
+  while (afterIndex < afterTokens.length) {
+    append("added", afterTokens[afterIndex]);
+    afterIndex += 1;
+  }
+  return parts;
+}
+
 export default function SeriesTwoPage() {
   const [document, setDocument] = useState<ParsedDocument>(initialSample);
+  const [sourceParagraphs, setSourceParagraphs] = useState([...sampleParagraphs]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [previewView, setPreviewView] = useState<"original" | "compare">(
+    "original",
+  );
   const [ignoredIds, setIgnoredIds] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [filter, setFilter] = useState<"전체" | FindingCategory>("전체");
@@ -164,6 +265,20 @@ export default function SeriesTwoPage() {
 
   const currentPageParagraphIndexes =
     document.pages[currentPage]?.paragraphIndexes ?? [];
+  const pageComparableCount = currentPageFindings.filter(
+    (finding) => finding.replacement,
+  ).length;
+  const pageSafeComparableCount = currentPageFindings.filter(
+    (finding) => finding.safe && finding.replacement,
+  ).length;
+  const pageReviewComparableCount =
+    pageComparableCount - pageSafeComparableCount;
+  const pageUnresolvedCount = currentPageFindings.length - pageComparableCount;
+  const pageAppliedCount = history.filter(
+    (item) =>
+      item.status === "적용" &&
+      (document.paragraphPages[item.paragraphIndex] ?? 0) === currentPage,
+  ).length;
   const pageNumbers = visiblePageNumbers(document.pages.length, currentPage);
   const currentSvg = useMemo(() => {
     if (document.previewKind !== "original-svg" || !document.renderPage) return null;
@@ -195,7 +310,9 @@ export default function SeriesTwoPage() {
   const resetForDocument = (nextDocument: ParsedDocument) => {
     const nextFindings = analyzeParagraphs(nextDocument.paragraphs);
     setDocument(nextDocument);
+    setSourceParagraphs([...nextDocument.paragraphs]);
     setCurrentPage(0);
+    setPreviewView("original");
     setIgnoredIds(new Set());
     setHistory([]);
     setReplacementChoices({});
@@ -237,6 +354,7 @@ export default function SeriesTwoPage() {
 
   const chooseFinding = (finding: Finding) => {
     setCurrentPage(document.paragraphPages[finding.paragraphIndex] ?? 0);
+    setPreviewView("compare");
     setSelectedId(finding.id);
   };
 
@@ -421,6 +539,54 @@ export default function SeriesTwoPage() {
     );
     return pieces;
   };
+
+  const proposedParagraph = (paragraph: string, paragraphIndex: number) => {
+    const paragraphFindings = currentPageFindings
+      .filter(
+        (finding) =>
+          finding.paragraphIndex === paragraphIndex && finding.replacement,
+      )
+      .sort((left, right) => right.start - left.start);
+
+    let proposed = paragraph;
+    for (const finding of paragraphFindings) {
+      const replacement =
+        replacementChoices[finding.id] ?? finding.replacement ?? "";
+      proposed =
+        proposed.slice(0, finding.start) +
+        replacement +
+        proposed.slice(finding.end);
+    }
+    return proposed;
+  };
+
+  const renderComparisonSide = (
+    parts: DiffPart[],
+    side: "before" | "after",
+    hasReviewSuggestion: boolean,
+  ) =>
+    parts.map((part, index) => {
+      if (side === "before" && part.type === "added") return null;
+      if (side === "after" && part.type === "removed") return null;
+      if (part.type === "same") {
+        return <Fragment key={`${side}-same-${index}`}>{part.value}</Fragment>;
+      }
+
+      return (
+        <mark
+          key={`${side}-${part.type}-${index}`}
+          className={
+            side === "before"
+              ? styles.compareRemoved
+              : hasReviewSuggestion
+                ? styles.compareAddedReview
+                : styles.compareAddedSafe
+          }
+        >
+          {part.value}
+        </mark>
+      );
+    });
 
   return (
     <main className={styles.shell}>
@@ -619,6 +785,41 @@ export default function SeriesTwoPage() {
             </div>
 
             {!isEditing && (
+              <div className={styles.previewViewBar}>
+                <div className={styles.previewViewTabs} role="group" aria-label="미리보기 방식">
+                  <button
+                    type="button"
+                    className={
+                      previewView === "original" ? styles.activePreviewView : ""
+                    }
+                    onClick={() => setPreviewView("original")}
+                    aria-pressed={previewView === "original"}
+                  >
+                    원문 페이지
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      previewView === "compare" ? styles.activePreviewView : ""
+                    }
+                    onClick={() => setPreviewView("compare")}
+                    aria-pressed={previewView === "compare"}
+                  >
+                    전후 비교
+                    {currentPageFindings.length > 0 && (
+                      <span>{currentPageFindings.length}</span>
+                    )}
+                  </button>
+                </div>
+                <p>
+                  {previewView === "original"
+                    ? "실제 문서 배치와 서식을 확인합니다."
+                    : "원본과 적용된 수정·남은 제안을 한 줄씩 맞춰 봅니다."}
+                </p>
+              </div>
+            )}
+
+            {!isEditing && (
               <nav className={styles.pageNavigator} aria-label="원문 페이지 이동">
                 <button
                   type="button"
@@ -698,6 +899,158 @@ export default function SeriesTwoPage() {
                   </button>
                 </div>
               </div>
+            ) : previewView === "compare" ? (
+              <section
+                className={styles.comparePreview}
+                aria-label={`${currentPage + 1}쪽 수정 전후 비교 미리보기`}
+              >
+                <div className={styles.compareSummary}>
+                  <div>
+                    <span aria-hidden="true">↔</span>
+                    <p>
+                      <strong>{currentPage + 1}쪽 전후 비교</strong>
+                      왼쪽은 처음 불러온 원문, 오른쪽은 적용한 수정과 아직 남은
+                      제안을 합친 예상 검수본입니다.
+                    </p>
+                  </div>
+                  <div className={styles.compareLegend}>
+                    {pageAppliedCount > 0 && (
+                      <span className={styles.appliedLegend}>
+                        적용 완료 {pageAppliedCount}
+                      </span>
+                    )}
+                    {pageSafeComparableCount > 0 && (
+                      <span className={styles.safeLegend}>
+                        안전 제안 {pageSafeComparableCount}
+                      </span>
+                    )}
+                    {pageReviewComparableCount > 0 && (
+                      <span className={styles.reviewLegend}>
+                        검토 제안 {pageReviewComparableCount}
+                      </span>
+                    )}
+                    {pageUnresolvedCount > 0 && (
+                      <span className={styles.unresolvedLegend}>
+                        문맥 확인 {pageUnresolvedCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className={styles.compareColumnHeaders} aria-hidden="true">
+                  <div>
+                    <span>수정 전</span>
+                    <strong>처음 불러온 원문</strong>
+                  </div>
+                  <div>
+                    <span>수정 후 예상</span>
+                    <strong>제안 반영 미리보기 · 확정 전</strong>
+                  </div>
+                </div>
+
+                <div className={styles.compareRows}>
+                  {currentPageParagraphIndexes.map((paragraphIndex) => {
+                    const original =
+                      sourceParagraphs[paragraphIndex] ??
+                      document.paragraphs[paragraphIndex] ??
+                      "";
+                    const current = document.paragraphs[paragraphIndex] ?? "";
+                    const proposed = proposedParagraph(current, paragraphIndex);
+                    const parts = compareText(original, proposed);
+                    const paragraphFindings = currentPageFindings.filter(
+                      (finding) => finding.paragraphIndex === paragraphIndex,
+                    );
+                    const paragraphApplied = history.filter(
+                      (item) =>
+                        item.status === "적용" &&
+                        item.paragraphIndex === paragraphIndex,
+                    );
+                    const pendingTextChangeCount = paragraphFindings.filter(
+                      (finding) => finding.replacement,
+                    ).length;
+                    const hasReviewSuggestion =
+                      paragraphFindings.some(
+                        (finding) => !finding.safe && finding.replacement,
+                      ) ||
+                      paragraphApplied.some((item) => !item.safe);
+                    const changed = original !== proposed;
+                    const isSelected = paragraphFindings.some(
+                      (finding) => finding.id === selectedId,
+                    );
+
+                    return (
+                      <article
+                        className={`${styles.compareRow} ${
+                          changed ? styles.changedCompareRow : styles.unchangedCompareRow
+                        } ${isSelected ? styles.selectedCompareRow : ""}`}
+                        key={`compare-${paragraphIndex}`}
+                      >
+                        <div className={styles.compareLineMeta}>
+                          <span>{paragraphIndex + 1}번째 검사 줄</span>
+                          <strong>
+                            {changed
+                              ? `${pendingTextChangeCount + paragraphApplied.length}개 변화`
+                              : paragraphFindings.length > 0
+                                ? "문맥 확인"
+                                : "변화 없음"}
+                          </strong>
+                        </div>
+                        <section className={styles.beforePane}>
+                          <p>
+                            {renderComparisonSide(
+                              parts,
+                              "before",
+                              hasReviewSuggestion,
+                            )}
+                          </p>
+                        </section>
+                        <section className={styles.afterPane}>
+                          <p>
+                            {renderComparisonSide(
+                              parts,
+                              "after",
+                              hasReviewSuggestion,
+                            )}
+                          </p>
+                        </section>
+                        {paragraphFindings.length > 0 && (
+                          <div className={styles.compareSuggestionStrip}>
+                            {paragraphFindings.map((finding) => (
+                              <button
+                                type="button"
+                                key={`compare-suggestion-${finding.id}`}
+                                onClick={() => chooseFinding(finding)}
+                                className={
+                                  selectedFinding?.id === finding.id
+                                    ? styles.activeCompareSuggestion
+                                    : ""
+                                }
+                              >
+                                <b
+                                  className={
+                                    finding.safe
+                                      ? styles.safeSuggestion
+                                      : styles.reviewSuggestion
+                                  }
+                                >
+                                  {finding.safe ? "안전" : "검토"}
+                                </b>
+                                <del>{finding.original}</del>
+                                <span aria-hidden="true">→</span>
+                                <strong>
+                                  {replacementChoices[finding.id] ??
+                                    finding.replacement ??
+                                    "문맥 확인"}
+                                </strong>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
             ) : currentSvg ? (
               <div className={styles.originalPreview}>
                 <div className={styles.originalNotice}>
