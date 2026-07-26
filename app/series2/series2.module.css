@@ -846,6 +846,7 @@
 }
 
 .originalSheet {
+  position: relative;
   width: min(100%, 920px);
   margin: 0 auto;
   overflow: hidden;
@@ -855,10 +856,69 @@
     0 18px 46px rgba(29, 35, 38, 0.18);
 }
 
-.originalSheet svg {
+.originalSvgHost svg {
   display: block;
   width: 100%;
   height: auto;
+}
+
+.originalHighlightLayer {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+
+.originalHighlight {
+  --highlighter: rgba(255, 220, 74, 0.48);
+  position: absolute;
+  min-width: 0.22%;
+  min-height: 0.45%;
+  border: 0;
+  border-radius: 2px 4px 3px 2px;
+  outline: 0;
+  background:
+    linear-gradient(
+      178deg,
+      transparent 7%,
+      var(--highlighter) 9%,
+      var(--highlighter) 88%,
+      transparent 91%
+    );
+  padding: 0;
+  mix-blend-mode: multiply;
+  pointer-events: auto;
+  cursor: pointer;
+  transform: rotate(-0.18deg) scaleY(1.12);
+  transform-origin: left center;
+}
+
+.originalHighlight:hover,
+.originalHighlight.selectedOriginalHighlight {
+  z-index: 3;
+  outline: 2px solid rgba(42, 55, 63, 0.7);
+  outline-offset: 1px;
+  filter: saturate(1.25);
+}
+
+.originalHighlight.highlight맞춤법 {
+  --highlighter: rgba(255, 118, 98, 0.48);
+}
+
+.originalHighlight.highlight띄어쓰기 {
+  --highlighter: rgba(75, 214, 174, 0.48);
+}
+
+.originalHighlight.highlight공공언어 {
+  --highlighter: rgba(255, 219, 72, 0.54);
+}
+
+.originalHighlight.highlight문장 {
+  --highlighter: rgba(188, 138, 231, 0.42);
+}
+
+.originalHighlight.highlight표기 {
+  --highlighter: rgba(90, 174, 236, 0.43);
 }
 
 .comparePreview {
@@ -1425,53 +1485,164 @@
   white-space: nowrap;
 }
 
-.filterRow {
+.filterChecks {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   gap: 4px;
   margin-top: 10px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: thin;
+  border: 0;
+  padding: 0;
 }
 
-.filterRow button {
+.filterChecks legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.filterCheck {
+  --filter-color: #6f777b;
+  --filter-soft: #f1eee8;
+  position: relative;
   display: inline-flex;
-  height: 28px;
+  min-height: 29px;
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  padding: 0 9px;
+  border: 1px solid #d7d0c5;
+  border-radius: 7px;
+  background: #fffdf9;
+  padding: 0 6px;
   color: #78756f;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 8px;
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
 }
 
-.filterRow button:hover {
-  background: #f0ebe3;
+.filterCheck:hover {
+  border-color: var(--filter-color);
 }
 
-.filterRow button.activeFilter {
-  border-color: #c8c0b5;
-  background: var(--navy);
-  color: #fff;
+.filterCheck input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.filterRow button span {
+.filterCheckBox {
+  position: relative;
   display: grid;
-  min-width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #aaa49b;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.checkedFilter {
+  border-color: color-mix(in srgb, var(--filter-color) 48%, #d7d0c5);
+  background: var(--filter-soft);
+  color: #4f5558;
+}
+
+.checkedFilter .filterCheckBox,
+.partialFilter .filterCheckBox {
+  border-color: var(--filter-color);
+  background: var(--filter-color);
+}
+
+.checkedFilter .filterCheckBox::after {
+  content: "✓";
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.partialFilter .filterCheckBox::after {
+  content: "−";
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.filterCheck input:focus-visible + .filterCheckBox {
+  outline: 2px solid rgba(35, 48, 56, 0.45);
+  outline-offset: 2px;
+}
+
+.filterCheck > i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 2px;
+  background: var(--filter-color);
+  opacity: 0.72;
+  transform: rotate(-3deg);
+}
+
+.filterCheck strong {
+  font-size: 8px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.filterCheck small {
+  display: grid;
+  min-width: 14px;
+  height: 14px;
   place-items: center;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(44, 50, 53, 0.07);
+  color: #77716a;
   font-size: 7px;
 }
 
-.activeFilter span {
-  background: rgba(255, 255, 255, 0.16) !important;
+.allFilterCheck {
+  --filter-color: var(--navy);
+  --filter-soft: #e8edf0;
+}
+
+.filter맞춤법 {
+  --filter-color: #d45f4e;
+  --filter-soft: #fae8e4;
+}
+
+.filter띄어쓰기 {
+  --filter-color: #2a967b;
+  --filter-soft: #e2f2ed;
+}
+
+.filter공공언어 {
+  --filter-color: #b58a24;
+  --filter-soft: #f8efd5;
+}
+
+.filter문장 {
+  --filter-color: #8c61b3;
+  --filter-soft: #eee6f5;
+}
+
+.filter표기 {
+  --filter-color: #347fad;
+  --filter-soft: #e3eff7;
+}
+
+.filterHelp {
+  margin: 7px 0 0;
+  color: #8b857c;
+  font-size: 7px;
+  line-height: 1.45;
 }
 
 .findingsList {

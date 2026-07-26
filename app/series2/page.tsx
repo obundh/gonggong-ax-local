@@ -33,8 +33,7 @@ const sampleParagraphs = [
   "추후 확정",
 ];
 
-const categoryFilters: Array<"전체" | FindingCategory> = [
-  "전체",
+const findingCategories: FindingCategory[] = [
   "맞춤법",
   "띄어쓰기",
   "공공언어",
@@ -50,6 +49,15 @@ type HistoryItem = Finding & {
 type DiffPart = {
   type: "same" | "removed" | "added";
   value: string;
+};
+
+type OriginalHighlight = {
+  id: string;
+  finding: Finding;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
 };
 
 const initialSample: ParsedDocument = createFlowDocument({
@@ -199,7 +207,9 @@ export default function SeriesTwoPage() {
   );
   const [ignoredIds, setIgnoredIds] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [filter, setFilter] = useState<"전체" | FindingCategory>("전체");
+  const [activeCategories, setActiveCategories] = useState<Set<FindingCategory>>(
+    () => new Set(findingCategories),
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [replacementChoices, setReplacementChoices] = useState<
     Record<string, string>
@@ -232,18 +242,17 @@ export default function SeriesTwoPage() {
 
   const visibleFindings = useMemo(
     () =>
-      filter === "전체"
-        ? currentPageFindings
-        : currentPageFindings.filter((finding) => finding.category === filter),
-    [currentPageFindings, filter],
+      currentPageFindings.filter((finding) =>
+        activeCategories.has(finding.category),
+      ),
+    [activeCategories, currentPageFindings],
   );
 
   const selectedFinding =
     visibleFindings.find((finding) => finding.id === selectedId) ?? null;
 
   const counts = useMemo(() => {
-    const result: Record<"전체" | FindingCategory, number> = {
-      전체: currentPageFindings.length,
+    const result: Record<FindingCategory, number> = {
       맞춤법: 0,
       띄어쓰기: 0,
       공공언어: 0,
@@ -253,6 +262,11 @@ export default function SeriesTwoPage() {
     for (const finding of currentPageFindings) result[finding.category] += 1;
     return result;
   }, [currentPageFindings]);
+
+  const allCategoriesSelected = findingCategories.every((category) =>
+    activeCategories.has(category),
+  );
+  const someCategoriesSelected = activeCategories.size > 0;
 
   const findingsByPage = useMemo(() => {
     const result = Array.from({ length: document.pages.length }, () => 0);
@@ -265,15 +279,15 @@ export default function SeriesTwoPage() {
 
   const currentPageParagraphIndexes =
     document.pages[currentPage]?.paragraphIndexes ?? [];
-  const pageComparableCount = currentPageFindings.filter(
+  const pageComparableCount = visibleFindings.filter(
     (finding) => finding.replacement,
   ).length;
-  const pageSafeComparableCount = currentPageFindings.filter(
+  const pageSafeComparableCount = visibleFindings.filter(
     (finding) => finding.safe && finding.replacement,
   ).length;
   const pageReviewComparableCount =
     pageComparableCount - pageSafeComparableCount;
-  const pageUnresolvedCount = currentPageFindings.length - pageComparableCount;
+  const pageUnresolvedCount = visibleFindings.length - pageComparableCount;
   const pageAppliedCount = history.filter(
     (item) =>
       item.status === "적용" &&
@@ -288,6 +302,52 @@ export default function SeriesTwoPage() {
       return null;
     }
   }, [currentPage, document]);
+
+  const originalHighlights = useMemo(() => {
+    const page = document.pages[currentPage];
+    if (!page?.lines || !page.width || !page.height) return [];
+
+    const highlights: OriginalHighlight[] = [];
+    for (const finding of visibleFindings) {
+      const line = page.lines.find(
+        (candidate) => candidate.paragraphIndex === finding.paragraphIndex,
+      );
+      if (!line) continue;
+
+      let textOffset = 0;
+      for (let runIndex = 0; runIndex < line.runs.length; runIndex += 1) {
+        const run = line.runs[runIndex];
+        const runStart = textOffset;
+        const runEnd = runStart + run.text.length;
+        textOffset = runEnd;
+
+        const overlapStart = Math.max(finding.start, runStart);
+        const overlapEnd = Math.min(finding.end, runEnd);
+        if (overlapStart >= overlapEnd || run.text.length === 0) continue;
+
+        const localStart = overlapStart - runStart;
+        const localEnd = overlapEnd - runStart;
+        const hasExactPositions =
+          run.charX && run.charX.length >= run.text.length + 1;
+        const startOffset = hasExactPositions
+          ? run.charX?.[localStart] ?? 0
+          : run.width * (localStart / run.text.length);
+        const endOffset = hasExactPositions
+          ? run.charX?.[localEnd] ?? run.width
+          : run.width * (localEnd / run.text.length);
+
+        highlights.push({
+          id: `${finding.id}-${runIndex}`,
+          finding,
+          left: ((run.x + startOffset) / page.width) * 100,
+          top: ((run.y + run.height * 0.1) / page.height) * 100,
+          width: (Math.max(2, endOffset - startOffset) / page.width) * 100,
+          height: (Math.max(7, run.height * 0.82) / page.height) * 100,
+        });
+      }
+    }
+    return highlights;
+  }, [currentPage, document.pages, visibleFindings]);
 
   const safeCount = findings.filter(
     (finding) => finding.safe && finding.replacement,
@@ -316,7 +376,7 @@ export default function SeriesTwoPage() {
     setIgnoredIds(new Set());
     setHistory([]);
     setReplacementChoices({});
-    setFilter("전체");
+    setActiveCategories(new Set(findingCategories));
     setSelectedId(null);
     setBaselineCount(nextFindings.length);
     setDraftText(nextDocument.paragraphs.join("\n"));
@@ -504,7 +564,7 @@ export default function SeriesTwoPage() {
   };
 
   const renderParagraph = (paragraph: string, paragraphIndex: number) => {
-    const paragraphFindings = findings.filter(
+    const paragraphFindings = visibleFindings.filter(
       (finding) => finding.paragraphIndex === paragraphIndex,
     );
     if (paragraphFindings.length === 0) return paragraph || "\u00a0";
@@ -541,7 +601,7 @@ export default function SeriesTwoPage() {
   };
 
   const proposedParagraph = (paragraph: string, paragraphIndex: number) => {
-    const paragraphFindings = currentPageFindings
+    const paragraphFindings = visibleFindings
       .filter(
         (finding) =>
           finding.paragraphIndex === paragraphIndex && finding.replacement,
@@ -806,8 +866,8 @@ export default function SeriesTwoPage() {
                     aria-pressed={previewView === "compare"}
                   >
                     전후 비교
-                    {currentPageFindings.length > 0 && (
-                      <span>{currentPageFindings.length}</span>
+                    {visibleFindings.length > 0 && (
+                      <span>{visibleFindings.length}</span>
                     )}
                   </button>
                 </div>
@@ -957,7 +1017,7 @@ export default function SeriesTwoPage() {
                     const current = document.paragraphs[paragraphIndex] ?? "";
                     const proposed = proposedParagraph(current, paragraphIndex);
                     const parts = compareText(original, proposed);
-                    const paragraphFindings = currentPageFindings.filter(
+                    const paragraphFindings = visibleFindings.filter(
                       (finding) => finding.paragraphIndex === paragraphIndex,
                     );
                     const paragraphApplied = history.filter(
@@ -1057,15 +1117,44 @@ export default function SeriesTwoPage() {
                   <span aria-hidden="true">▣</span>
                   <p>
                     <strong>원문 {currentPage + 1}쪽</strong>
-                    글꼴·표·그림·쪽 배치를 로컬에서 재현합니다. 수정 제안은 오른쪽
-                    검사 결과와 검수본에만 반영되어 원본은 바뀌지 않습니다.
+                    글꼴·표·그림·쪽 배치를 로컬에서 재현하고, 체크한 범주의
+                    검사 위치 {visibleFindings.length}곳을 형광펜으로 표시합니다.
+                    원본 파일 자체는 바뀌지 않습니다.
                   </p>
                 </div>
                 <article
                   className={styles.originalSheet}
                   aria-label={`원문 ${currentPage + 1}쪽 미리보기`}
-                  dangerouslySetInnerHTML={{ __html: currentSvg }}
-                />
+                >
+                  <div
+                    className={styles.originalSvgHost}
+                    dangerouslySetInnerHTML={{ __html: currentSvg }}
+                  />
+                  <div className={styles.originalHighlightLayer}>
+                    {originalHighlights.map((highlight) => (
+                      <button
+                        type="button"
+                        key={highlight.id}
+                        className={`${styles.originalHighlight} ${
+                          styles[`highlight${highlight.finding.category}`]
+                        } ${
+                          selectedFinding?.id === highlight.finding.id
+                            ? styles.selectedOriginalHighlight
+                            : ""
+                        }`}
+                        style={{
+                          left: `${highlight.left}%`,
+                          top: `${highlight.top}%`,
+                          width: `${highlight.width}%`,
+                          height: `${highlight.height}%`,
+                        }}
+                        title={`${highlight.finding.category}: ${highlight.finding.original}`}
+                        aria-label={`${highlight.finding.category} 검사 위치: ${highlight.finding.original}`}
+                        onClick={() => chooseFinding(highlight.finding)}
+                      />
+                    ))}
+                  </div>
+                </article>
               </div>
             ) : (
               <article className={styles.paper} aria-label="검사 문서 미리보기">
@@ -1100,7 +1189,8 @@ export default function SeriesTwoPage() {
                   <strong>{currentPage + 1}쪽</strong> 검사 결과
                 </p>
                 <span>
-                  이 쪽 {visibleFindings.length.toLocaleString()}건 · 문서 전체{" "}
+                  선택 표시 {visibleFindings.length.toLocaleString()}건 · 이 쪽 전체{" "}
+                  {currentPageFindings.length.toLocaleString()}건 · 문서 전체{" "}
                   {findings.length.toLocaleString()}건
                 </span>
               </div>
@@ -1131,32 +1221,88 @@ export default function SeriesTwoPage() {
                   다음 쪽 →
                 </button>
               </div>
-              <div className={styles.filterRow}>
-                {categoryFilters.map((category) => (
-                  <button
-                    type="button"
-                    key={category}
-                    className={filter === category ? styles.activeFilter : ""}
-                    onClick={() => {
-                      setFilter(category);
+              <fieldset className={styles.filterChecks}>
+                <legend>형광펜 범주 선택</legend>
+                <label
+                  className={`${styles.filterCheck} ${styles.allFilterCheck} ${
+                    allCategoriesSelected ? styles.checkedFilter : ""
+                  } ${
+                    someCategoriesSelected && !allCategoriesSelected
+                      ? styles.partialFilter
+                      : ""
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allCategoriesSelected}
+                    ref={(input) => {
+                      if (input) {
+                        input.indeterminate =
+                          someCategoriesSelected && !allCategoriesSelected;
+                      }
+                    }}
+                    onChange={() => {
+                      setActiveCategories(
+                        allCategoriesSelected
+                          ? new Set()
+                          : new Set(findingCategories),
+                      );
                       setSelectedId(null);
                     }}
-                  >
-                    {category}
-                    {category !== "전체" && counts[category] > 0 && (
-                      <span>{counts[category]}</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+                  />
+                  <span className={styles.filterCheckBox} aria-hidden="true" />
+                  <strong>전체</strong>
+                  <small>{currentPageFindings.length}</small>
+                </label>
+                {findingCategories.map((category) => {
+                  const isChecked = activeCategories.has(category);
+                  return (
+                    <label
+                      key={category}
+                      className={`${styles.filterCheck} ${
+                        styles[`filter${category}`]
+                      } ${isChecked ? styles.checkedFilter : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          setActiveCategories((current) => {
+                            const next = new Set(current);
+                            if (next.has(category)) next.delete(category);
+                            else next.add(category);
+                            return next;
+                          });
+                          setSelectedId(null);
+                        }}
+                      />
+                      <span className={styles.filterCheckBox} aria-hidden="true" />
+                      <i aria-hidden="true" />
+                      <strong>{category}</strong>
+                      <small>{counts[category]}</small>
+                    </label>
+                  );
+                })}
+              </fieldset>
+              <p className={styles.filterHelp}>
+                체크한 범주만 원문 형광펜·전후 비교·결과 목록에 표시됩니다.
+              </p>
             </div>
 
             <div className={styles.findingsList}>
               {visibleFindings.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <span>✓</span>
-                  <strong>{currentPage + 1}쪽의 남은 항목이 없습니다</strong>
-                  <p>다른 쪽으로 이동하거나 다른 범주를 확인하세요.</p>
+                  <span>{someCategoriesSelected ? "✓" : "□"}</span>
+                  <strong>
+                    {someCategoriesSelected
+                      ? `${currentPage + 1}쪽의 선택 범주 항목이 없습니다`
+                      : "표시할 범주를 체크하세요"}
+                  </strong>
+                  <p>
+                    {someCategoriesSelected
+                      ? "다른 쪽으로 이동하거나 다른 범주를 선택하세요."
+                      : "전체 또는 맞춤법·띄어쓰기 같은 범주를 여러 개 선택할 수 있습니다."}
+                  </p>
                 </div>
               ) : (
                 visibleFindings.map((finding) => (

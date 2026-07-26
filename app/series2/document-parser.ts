@@ -7,6 +7,21 @@ export type ParsedPage = {
   paragraphIndexes: number[];
   width?: number;
   height?: number;
+  lines?: ParsedPageLine[];
+};
+
+export type ParsedPageRun = {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  charX?: number[];
+};
+
+export type ParsedPageLine = {
+  paragraphIndex: number;
+  runs: ParsedPageRun[];
 };
 
 export type ParsedDocument = {
@@ -25,6 +40,9 @@ type RhwpTextRun = {
   text?: string;
   x?: number;
   y?: number;
+  w?: number;
+  h?: number;
+  charX?: number[];
 };
 
 type RhwpPageInfo = {
@@ -157,15 +175,27 @@ function pageTextLines(layoutJson: string) {
 
   return rows
     .sort((left, right) => left.y - right.y)
-    .map((row) =>
-      row.runs
-        .sort((left, right) => (left.x ?? 0) - (right.x ?? 0))
-        .map((run) => run.text ?? "")
-        .join("")
-        .replace(/\u00a0/g, " ")
-        .trimEnd(),
-    )
-    .filter((line) => line.trim().length > 0);
+    .map((row) => {
+      const sortedRuns = row.runs.sort(
+        (left, right) => (left.x ?? 0) - (right.x ?? 0),
+      );
+      return {
+        text: sortedRuns
+          .map((run) => run.text ?? "")
+          .join("")
+          .replace(/\u00a0/g, " ")
+          .trimEnd(),
+        runs: sortedRuns.map((run) => ({
+          text: (run.text ?? "").replace(/\u00a0/g, " "),
+          x: run.x ?? 0,
+          y: run.y ?? row.y,
+          width: run.w ?? 0,
+          height: run.h ?? 0,
+          charX: run.charX,
+        })),
+      };
+    })
+    .filter((line) => line.text.trim().length > 0);
 }
 
 function sanitizeSvg(svg: string) {
@@ -214,9 +244,12 @@ async function parseRhwp(file: File, format: "HWP" | "HWPX"): Promise<ParsedDocu
 
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
       const pageParagraphIndexes: number[] = [];
+      const pageLines: ParsedPageLine[] = [];
       for (const line of pageTextLines(hwpDocument.getPageTextLayout(pageIndex))) {
+        const paragraphIndex = paragraphs.length;
         pageParagraphIndexes.push(paragraphs.length);
-        paragraphs.push(line);
+        pageLines.push({ paragraphIndex, runs: line.runs });
+        paragraphs.push(line.text);
         paragraphPages.push(pageIndex);
       }
 
@@ -232,6 +265,7 @@ async function parseRhwp(file: File, format: "HWP" | "HWPX"): Promise<ParsedDocu
         paragraphIndexes: pageParagraphIndexes,
         width: pageInfo.width,
         height: pageInfo.height,
+        lines: pageLines,
       });
 
       if (pageIndex > 0 && pageIndex % 8 === 0) {
