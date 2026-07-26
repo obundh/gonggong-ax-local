@@ -1245,6 +1245,641 @@
   background: #d4d4d4;
 }
 
+.commandCount {
+  display: grid;
+  min-width: 17px;
+  height: 17px;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: 9px;
+  color: #fff;
+  background: #16864b;
+  font-size: 8px;
+}
+
+.calendarNavIcon,
+.calendarHeadingIcon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: end center;
+  padding-bottom: 1px;
+  border: 1px solid #5f91bc;
+  border-radius: 3px;
+  color: #176aa8;
+  background:
+    linear-gradient(#176aa8 0 5px, #fff 5px 100%);
+  font-size: 7px;
+  font-weight: 700;
+}
+
+.calendarHeadingIcon {
+  width: 28px;
+  height: 28px;
+  padding-bottom: 3px;
+  border-radius: 5px;
+  font-size: 9px;
+}
+
+.calendarWorkspace {
+  padding: 16px 18px 24px;
+}
+
+.calendarToolbar {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(240px, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+
+.calendarToolbar > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendarToolbar button {
+  min-width: 32px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid #d6d6d6;
+  border-radius: 5px;
+  color: #303030;
+  background: #fff;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.calendarToolbar button:hover {
+  background: #edf5fb;
+  border-color: #bad4e8;
+}
+
+.calendarToolbar h2 {
+  margin: 0;
+  color: #222;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.calendarLegend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  color: #656565;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.calendarLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendarLegend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legendCandidate {
+  background: #2686ca;
+}
+
+.legendModified {
+  background: #9a9a9a;
+}
+
+.legendConfirmed {
+  background: #1c9b58;
+}
+
+.calendarTableWrap {
+  overflow: auto;
+  border: 1px solid #dcdcdc;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.calendarTable {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendarTable th {
+  height: 30px;
+  color: #686868;
+  background: #f7f7f7;
+  border-right: 1px solid #e7e7e7;
+  border-bottom: 1px solid #dcdcdc;
+  font-size: 9px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.calendarTable th:first-child {
+  color: #b34c43;
+}
+
+.calendarTable th:last-child {
+  color: #326fa4;
+}
+
+.calendarTable td {
+  height: 104px;
+  padding: 0;
+  vertical-align: top;
+  border-right: 1px solid #ebebeb;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.calendarTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.calendarTable td:last-child,
+.calendarTable th:last-child {
+  border-right: 0;
+}
+
+.calendarTable .calendarBlank {
+  background: #fafafa;
+}
+
+.calendarDay {
+  display: flex;
+  width: 100%;
+  height: 103px;
+  min-width: 0;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px;
+  border: 0;
+  color: #333;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendarDay:hover {
+  background: #f4f9fd;
+}
+
+.calendarDay:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline: 2px solid #1679be;
+  outline-offset: -2px;
+}
+
+.calendarDaySelected {
+  background: #eef7fd;
+  box-shadow: inset 0 0 0 2px #3a8bc4;
+}
+
+.calendarDayConfirmed {
+  background: #f2fbf6;
+}
+
+.calendarDayConfirmed.calendarDaySelected {
+  box-shadow: inset 0 0 0 2px #218b55;
+}
+
+.calendarDayNumber {
+  display: flex;
+  min-height: 18px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.calendarDayNumber small {
+  padding: 2px 4px;
+  border-radius: 7px;
+  color: #fff;
+  background: #246fa7;
+  font-size: 7px;
+}
+
+.calendarDayEvents {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.calendarDayEvents em {
+  display: block;
+  overflow: hidden;
+  padding: 3px 5px;
+  border-left: 3px solid;
+  border-radius: 3px;
+  font-size: 7px;
+  font-style: normal;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventCandidate {
+  color: #175f94;
+  background: #e5f2fb;
+  border-color: #2686ca !important;
+}
+
+.eventModified {
+  color: #606060;
+  background: #eeeeee;
+  border-color: #999 !important;
+}
+
+.eventConfirmed {
+  color: #176f43;
+  background: #e3f6eb;
+  border-color: #1c9b58 !important;
+  font-weight: 700;
+}
+
+.calendarDayEvents > small {
+  padding-left: 4px;
+  color: #777;
+  font-size: 7px;
+}
+
+.dayAgenda {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid #dedede;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.dayAgendaHeading {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 13px;
+  background: #f7f7f7;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.dayAgendaHeading strong,
+.dayAgendaHeading small {
+  display: block;
+}
+
+.dayAgendaHeading strong {
+  font-size: 12px;
+}
+
+.dayAgendaHeading small {
+  margin-top: 2px;
+  color: #777;
+  font-size: 8px;
+}
+
+.dayAgendaHeading > span {
+  padding: 3px 7px;
+  border-radius: 9px;
+  color: #555;
+  background: #e9e9e9;
+  font-size: 8px;
+}
+
+.agendaList {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+}
+
+.agendaList > button {
+  display: grid;
+  min-width: 0;
+  min-height: 42px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agendaList > button:hover {
+  background: #f2f7fb;
+  border-color: #d7e5ef;
+}
+
+.agendaList > button > span:first-child {
+  display: grid;
+  min-height: 23px;
+  place-items: center;
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.agendaList > button > span:last-child {
+  min-width: 0;
+}
+
+.agendaList strong,
+.agendaList small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agendaList strong {
+  color: #333;
+  font-size: 10px;
+}
+
+.agendaList small {
+  margin-top: 2px;
+  color: #777;
+  font-size: 8px;
+}
+
+.agendaCandidate > span:first-child {
+  color: #175f94;
+  background: #e5f2fb;
+}
+
+.agendaModified > span:first-child {
+  color: #5f5f5f;
+  background: #ededed;
+}
+
+.agendaConfirmed > span:first-child {
+  color: #176f43;
+  background: #e3f6eb;
+}
+
+.agendaList > p {
+  margin: 0;
+  padding: 22px;
+  color: #888;
+  font-size: 10px;
+  text-align: center;
+}
+
+.calendarPreview {
+  padding: 16px 15px 20px;
+}
+
+.calendarDateCard {
+  padding: 13px;
+  border: 1px solid #cddfec;
+  border-radius: 7px;
+  background: #eff7fd;
+}
+
+.calendarDateCard small,
+.calendarDateCard strong,
+.calendarDateCard span {
+  display: block;
+}
+
+.calendarDateCard small {
+  color: #687988;
+  font-size: 8px;
+}
+
+.calendarDateCard strong {
+  margin-top: 3px;
+  color: #174f7a;
+  font-size: 17px;
+}
+
+.calendarDateCard span {
+  margin-top: 7px;
+  color: #647583;
+  font-size: 8px;
+}
+
+.scheduleFileSelect,
+.manualDateField {
+  display: grid;
+  gap: 5px;
+  margin-top: 15px;
+}
+
+.scheduleFileSelect > span,
+.manualDateField > span {
+  color: #666;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.scheduleFileSelect select,
+.manualDateField input {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid #d2d2d2;
+  border-radius: 5px;
+  color: #303030;
+  background: #fff;
+  font: inherit;
+  font-size: 9px;
+}
+
+.scheduleFileSummary {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 9px;
+  border-radius: 5px;
+  background: #f1f1f1;
+}
+
+.scheduleFileSummary > span:last-child {
+  min-width: 0;
+}
+
+.scheduleFileSummary strong,
+.scheduleFileSummary small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scheduleFileSummary strong {
+  font-size: 10px;
+}
+
+.scheduleFileSummary small {
+  margin-top: 2px;
+  color: #777;
+  font-size: 8px;
+}
+
+.dateEvidenceList {
+  display: grid;
+  gap: 4px;
+}
+
+.dateEvidenceList button {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 39px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid #dedede;
+  border-radius: 5px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dateEvidenceList button:hover,
+.dateEvidenceList .dateEvidenceSelected {
+  border-color: #6aa3cc;
+  background: #edf7fd;
+}
+
+.dateEvidenceList button > span:first-child {
+  display: grid;
+  min-height: 23px;
+  place-items: center;
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.dateEvidenceList button > span:last-child {
+  min-width: 0;
+}
+
+.dateEvidenceList strong,
+.dateEvidenceList small {
+  display: block;
+}
+
+.dateEvidenceList strong {
+  color: #303030;
+  font-size: 10px;
+}
+
+.dateEvidenceList small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #777;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evidenceCandidate {
+  color: #175f94;
+  background: #e5f2fb;
+}
+
+.evidenceModified {
+  color: #5d5d5d;
+  background: #ededed;
+}
+
+.confirmDateButton {
+  width: 100%;
+  min-height: 37px;
+  margin-top: 9px;
+  border: 1px solid #16864b;
+  border-radius: 5px;
+  color: #fff;
+  background: #16864b;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirmDateButton:hover:not(:disabled) {
+  background: #11743f;
+}
+
+.confirmDateButton:disabled {
+  border-color: #bdbdbd;
+  background: #bdbdbd;
+  cursor: default;
+}
+
+.confirmedSchedule {
+  margin-top: 10px;
+  padding: 11px;
+  border: 1px solid #bfe3ce;
+  border-radius: 6px;
+  background: #eaf8f0;
+}
+
+.confirmedSchedule span,
+.confirmedSchedule strong,
+.confirmedSchedule small {
+  display: block;
+}
+
+.confirmedSchedule span {
+  color: #437059;
+  font-size: 8px;
+}
+
+.confirmedSchedule strong {
+  margin-top: 3px;
+  color: #176f43;
+  font-size: 14px;
+}
+
+.confirmedSchedule small {
+  margin-top: 3px;
+  color: #557364;
+  font-size: 8px;
+}
+
+.confirmedSchedule button {
+  margin-top: 8px;
+  padding: 4px 7px;
+  border: 1px solid #9ac9ae;
+  border-radius: 4px;
+  color: #37634a;
+  background: #fff;
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.calendarToolbar button:focus-visible,
+.agendaList button:focus-visible,
+.dateEvidenceList button:focus-visible,
+.confirmDateButton:focus-visible,
+.scheduleFileSelect select:focus-visible,
+.manualDateField input:focus-visible {
+  outline: 2px solid #1679be;
+  outline-offset: 2px;
+}
+
 .visuallyHidden {
   position: absolute;
   width: 1px;
@@ -1288,6 +1923,16 @@
 
   .fileTable th:nth-child(5) {
     width: 15%;
+  }
+
+  .calendarToolbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .calendarLegend {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
   }
 }
 
@@ -1338,6 +1983,21 @@
     display: none;
   }
 
+  .calendarBody {
+    grid-template-columns: 180px minmax(480px, 1fr);
+  }
+
+  .calendarBody .navigationPane {
+    grid-row: 1 / 3;
+  }
+
+  .calendarBody .previewPane {
+    display: flex;
+    grid-column: 2;
+    border-top: 1px solid #e5e5e5;
+    border-left: 0;
+  }
+
   .safetyStrip b {
     margin-left: 0;
   }
@@ -1372,6 +2032,37 @@
 
   .contentPane {
     min-height: calc(100vh - 255px);
+  }
+
+  .calendarBody .previewPane {
+    display: flex;
+    min-height: auto;
+  }
+
+  .calendarWorkspace {
+    padding: 12px;
+  }
+
+  .calendarToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .calendarToolbar > div:first-child {
+    justify-content: center;
+  }
+
+  .calendarToolbar h2 {
+    grid-row: 1;
+  }
+
+  .calendarLegend {
+    grid-column: 1;
+    grid-row: 3;
+    justify-content: center;
+  }
+
+  .calendarTableWrap {
+    max-height: 390px;
   }
 
   .emptyState {

@@ -67,6 +67,9 @@ test("server-renders the filename-only handover mapper", async () => {
     /<title>공공 AX 로컬 시리즈 - 인수인계<\/title>/i,
   );
   assert.match(html, /파일 탐색/);
+  assert.match(html, /월간 달력/);
+  assert.match(html, /파일명 날짜는 시행일 후보/);
+  assert.match(html, /파일 수정일은 시행일이 아닙니다/);
   assert.match(html, /파일명에서 추출한 제목 후보/);
   assert.match(html, /인수인계 폴더 선택/);
   assert.match(html, /파일 내용은 읽지 않습니다/);

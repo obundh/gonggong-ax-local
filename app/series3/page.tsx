@@ -22,7 +22,19 @@ type LocalModel = {
 };
 
 type AiState = "idle" | "connecting" | "generating" | "done" | "error";
-type WorkspaceView = "files" | "handover";
+type WorkspaceView = "files" | "calendar" | "handover";
+
+type ScheduleOverride = {
+  date: string;
+  status: "confirmed" | "edited";
+  basis: "filename" | "modified" | "manual";
+};
+
+type CalendarEvidence = {
+  filename: ExplorerFile[];
+  modified: ExplorerFile[];
+  confirmed: ExplorerFile[];
+};
 
 type ExplorerFile = AnalyzedFilename & {
   branchId: string;
@@ -47,9 +59,9 @@ const sampleInventory: InventoryFile[] = [
     lastModified: Date.UTC(2025, 3, 8),
   },
   {
-    name: "2025_안전한국훈련_결과보고_최종.hwp",
+    name: "2025.05.28_안전한국훈련_결과보고_최종.hwp",
     relativePath:
-      "재난안전업무/01_재난대응훈련/2025_안전한국훈련_결과보고_최종.hwp",
+      "재난안전업무/01_재난대응훈련/2025.05.28_안전한국훈련_결과보고_최종.hwp",
     size: 1_284_000,
     lastModified: Date.UTC(2025, 5, 2),
   },
@@ -73,9 +85,9 @@ const sampleInventory: InventoryFile[] = [
     lastModified: Date.UTC(2026, 0, 22),
   },
   {
-    name: "2026_상반기_재난취약시설_안전점검계획.hwp",
+    name: "2026-03-19_상반기_재난취약시설_안전점검계획.hwp",
     relativePath:
-      "재난안전업무/03_취약시설점검/2026_상반기_재난취약시설_안전점검계획.hwp",
+      "재난안전업무/03_취약시설점검/2026-03-19_상반기_재난취약시설_안전점검계획.hwp",
     size: 744_000,
     lastModified: Date.UTC(2026, 2, 3),
   },
@@ -147,6 +159,92 @@ function formatDate(timestamp: number) {
   }).format(timestamp);
 }
 
+function dateKeyFromTimestamp(timestamp: number) {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function monthKeyFromDate(dateKey: string) {
+  return /^\d{4}-\d{2}-\d{2}$/u.test(dateKey) ? dateKey.slice(0, 7) : "";
+}
+
+function shiftMonth(monthKey: string, amount: number) {
+  const [year, month] = monthKey.split("-").map(Number);
+  if (!year || !month) return monthKey;
+  const shifted = new Date(year, month - 1 + amount, 1);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+function calendarDays(monthKey: string) {
+  const [year, month] = monthKey.split("-").map(Number);
+  if (!year || !month) return [];
+  const leading = new Date(year, month - 1, 1).getDay();
+  const count = new Date(year, month, 0).getDate();
+  return Array.from({ length: Math.ceil((leading + count) / 7) * 7 }, (_, index) => {
+    const day = index - leading + 1;
+    if (day < 1 || day > count) return null;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(
+      2,
+      "0",
+    )}`;
+  });
+}
+
+function formatDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day) return dateKey;
+  return `${year}년 ${month}월 ${day}일`;
+}
+
+function dateContextLabel(contextHint: string) {
+  const labels: Record<string, string> = {
+    execution: "시행 표현 주변",
+    plan: "계획·예정 표현 주변",
+    deadline: "마감·기한 표현 주변",
+    written: "작성·보고 표현 주변",
+    reference: "기준일 표현 주변",
+    unknown: "날짜 의미 미확인",
+  };
+  return labels[contextHint] ?? labels.unknown;
+}
+
+function buildConfirmedScheduleMarkdown(
+  allFiles: ExplorerFile[],
+  overrides: Record<string, ScheduleOverride>,
+) {
+  const entries = Object.entries(overrides)
+    .map(([path, override]) => ({
+      file: allFiles.find((item) => item.relativePath === path),
+      override,
+    }))
+    .filter((entry) => entry.file)
+    .sort((left, right) => left.override.date.localeCompare(right.override.date));
+  if (!entries.length) return "";
+
+  return [
+    "",
+    "## 사용자 확인 시행일",
+    "",
+    "> 달력에서 담당자가 직접 확인하거나 수정한 날짜입니다.",
+    "",
+    ...entries.map(
+      ({ file, override }) =>
+        `- ${override.date} · ${file?.branchLabel} · \`${file?.relativePath}\` · ${
+          override.status === "edited" ? "사용자 수정" : "사용자 확인"
+        }`,
+    ),
+    "",
+  ].join("\n");
+}
+
 function statusClass(statusCode: string) {
   if (statusCode === "TERMINAL_SIGNAL_FOUND") return styles.statusComplete;
   if (statusCode === "ACTIVE_SIGNAL_FOUND" || statusCode === "PLAN_ONLY") {
@@ -210,19 +308,29 @@ function modelScore(model: LocalModel) {
   return score;
 }
 
-function aiContext(analysis: FilenameAnalysis) {
+function aiContext(
+  analysis: FilenameAnalysis,
+  scheduleOverrides: Record<string, ScheduleOverride>,
+) {
   const branches = analysis.branches.map((branch) => ({
     branch: branch.label,
     work_mode_hint: branch.modeLabel,
     status_signal: branch.statusLabel,
     periods: branch.periods,
     document_roles: branch.roleCounts,
-    filenames: branch.files.map((file) => file.relativePath),
+    files: branch.files.map((file) => ({
+      path: file.relativePath,
+      filename_date_candidates: file.dateCandidates,
+      file_last_modified: dateKeyFromTimestamp(file.lastModified),
+      user_confirmed_execution_date:
+        scheduleOverrides[file.relativePath]?.date ?? null,
+    })),
   }));
   const serialized = JSON.stringify(
     {
       root_folder: analysis.rootName,
-      warning: "문서 본문 미확인. 폴더명과 파일명만 제공됨.",
+      warning:
+        "문서 본문 미확인. 파일명 날짜와 파일 수정일은 시행일이 아니며, user_confirmed_execution_date만 담당자가 확인한 날짜임.",
       branches,
     },
     null,
@@ -245,6 +353,11 @@ export default function SeriesThreePage() {
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("files");
   const [query, setQuery] = useState("");
+  const [calendarMonth, setCalendarMonth] = useState("");
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState("");
+  const [scheduleOverrides, setScheduleOverrides] = useState<
+    Record<string, ScheduleOverride>
+  >({});
   const [aiState, setAiState] = useState<AiState>("idle");
   const [aiDraft, setAiDraft] = useState("");
   const [aiError, setAiError] = useState("");
@@ -345,6 +458,65 @@ export default function SeriesThreePage() {
   const selectedFile =
     allFiles.find((file) => file.relativePath === selectedFilePath) ?? null;
 
+  const calendarEvidenceByDate = useMemo(() => {
+    const evidence = new Map<string, CalendarEvidence>();
+    const add = (
+      date: string,
+      kind: keyof CalendarEvidence,
+      file: ExplorerFile,
+    ) => {
+      if (!date) return;
+      const current = evidence.get(date) ?? {
+        filename: [],
+        modified: [],
+        confirmed: [],
+      };
+      if (!current[kind].some((item) => item.relativePath === file.relativePath)) {
+        current[kind].push(file);
+      }
+      evidence.set(date, current);
+    };
+
+    allFiles.forEach((file) => {
+      file.dateCandidates.forEach((candidate) => {
+        add(candidate.date, "filename", file);
+      });
+      add(dateKeyFromTimestamp(file.lastModified), "modified", file);
+      const override = scheduleOverrides[file.relativePath];
+      if (override) add(override.date, "confirmed", file);
+    });
+    return evidence;
+  }, [allFiles, scheduleOverrides]);
+
+  const selectedCalendarEvidence =
+    calendarEvidenceByDate.get(selectedCalendarDate) ?? {
+      filename: [],
+      modified: [],
+      confirmed: [],
+    };
+
+  const displayedCalendarDays = useMemo(
+    () => calendarDays(calendarMonth),
+    [calendarMonth],
+  );
+
+  const confirmedScheduleCount = Object.keys(scheduleOverrides).length;
+  const todayKey = analysis
+    ? dateKeyFromTimestamp(Date.parse(analysis.analyzedAt))
+    : "";
+  const selectedFileOverride = selectedFile
+    ? scheduleOverrides[selectedFile.relativePath]
+    : undefined;
+  const selectedDateBasis: ScheduleOverride["basis"] =
+    selectedFile?.dateCandidates.some(
+      (candidate) => candidate.date === selectedCalendarDate,
+    )
+      ? "filename"
+      : selectedFile &&
+          dateKeyFromTimestamp(selectedFile.lastModified) === selectedCalendarDate
+        ? "modified"
+        : "manual";
+
   const selectedBranch = useMemo(() => {
     if (!analysis) return null;
     return (
@@ -365,12 +537,28 @@ export default function SeriesThreePage() {
 
   const applyInventory = (inventory: InventoryFile[]) => {
     const next = analyzeFilenameInventory(inventory);
+    const nextFiles = next.branches.flatMap((branch) => branch.files);
+    const candidateDates = nextFiles
+      .flatMap((file) => file.dateCandidates.map((candidate) => candidate.date))
+      .filter(Boolean)
+      .sort();
+    const latestModified = Math.max(
+      0,
+      ...nextFiles.map((file) => file.lastModified),
+    );
+    const focusDate =
+      candidateDates.at(-1) ||
+      dateKeyFromTimestamp(latestModified) ||
+      dateKeyFromTimestamp(Date.parse(next.analyzedAt));
     setAnalysis(next);
     setSelectedFolderPath(next.rootName);
     setSelectedFilePath(next.branches[0]?.files[0]?.relativePath ?? "");
     setSelectedBranchId(next.branches[0]?.id ?? "");
     setWorkspaceView("files");
     setQuery("");
+    setCalendarMonth(monthKeyFromDate(focusDate));
+    setSelectedCalendarDate(focusDate);
+    setScheduleOverrides({});
     setAiDraft("");
     setAiError("");
     setAiState("idle");
@@ -399,6 +587,9 @@ export default function SeriesThreePage() {
     setSelectedBranchId("");
     setWorkspaceView("files");
     setQuery("");
+    setCalendarMonth("");
+    setSelectedCalendarDate("");
+    setScheduleOverrides({});
     setAiDraft("");
     setAiError("");
     setAiState("idle");
@@ -418,11 +609,60 @@ export default function SeriesThreePage() {
     setWorkspaceView("handover");
   };
 
+  const openCalendar = () => {
+    setWorkspaceView("calendar");
+    setQuery("");
+  };
+
+  const selectCalendarFile = (file: ExplorerFile, date: string) => {
+    setSelectedFilePath(file.relativePath);
+    setSelectedBranchId(file.branchId);
+    setSelectedCalendarDate(date);
+    setCalendarMonth(monthKeyFromDate(date));
+  };
+
+  const confirmScheduleDate = (
+    file: ExplorerFile,
+    date: string,
+    basis: ScheduleOverride["basis"],
+  ) => {
+    if (!date) return;
+    const filenameMatch = file.dateCandidates.some(
+      (candidate) => candidate.date === date,
+    );
+    const modifiedMatch = dateKeyFromTimestamp(file.lastModified) === date;
+    setScheduleOverrides((current) => ({
+      ...current,
+      [file.relativePath]: {
+        date,
+        basis,
+        status:
+          filenameMatch || modifiedMatch || basis !== "manual"
+            ? "confirmed"
+            : "edited",
+      },
+    }));
+    setSelectedCalendarDate(date);
+    setCalendarMonth(monthKeyFromDate(date));
+  };
+
+  const clearScheduleDate = (file: ExplorerFile) => {
+    setScheduleOverrides((current) => {
+      const next = { ...current };
+      delete next[file.relativePath];
+      return next;
+    });
+  };
+
   const downloadMarkdown = () => {
     if (!analysis) return;
+    const confirmedSection = buildConfirmedScheduleMarkdown(
+      allFiles,
+      scheduleOverrides,
+    );
     downloadText(
       `${sanitizeFilename(analysis.rootName)}_1차_인수인계.md`,
-      buildFilenameHandoverMarkdown(analysis, aiDraft),
+      `${buildFilenameHandoverMarkdown(analysis, aiDraft)}${confirmedSection}`,
       "text/markdown;charset=utf-8",
     );
   };
@@ -431,7 +671,17 @@ export default function SeriesThreePage() {
     if (!analysis) return;
     downloadText(
       `${sanitizeFilename(analysis.rootName)}_파일명분석.json`,
-      JSON.stringify({ ...analysis, aiDraft: aiDraft || undefined }, null, 2),
+      JSON.stringify(
+        {
+          ...analysis,
+          userConfirmedSchedule: Object.entries(scheduleOverrides).map(
+            ([relativePath, override]) => ({ relativePath, ...override }),
+          ),
+          aiDraft: aiDraft || undefined,
+        },
+        null,
+        2,
+      ),
       "application/json;charset=utf-8",
     );
   };
@@ -494,11 +744,12 @@ export default function SeriesThreePage() {
 2. 업무 가지별 역할과 발견된 기간
 3. 완료·진행·상시관리 단서
 4. 후임자가 먼저 확인할 사항
-5. 파일명 분석의 한계
+5. 사용자 확인 시행일
+6. 파일명 분석의 한계
 
 관련 파일명을 각 판단의 근거로 짧게 제시하세요.
 
-${aiContext(analysis)}`,
+${aiContext(analysis, scheduleOverrides)}`,
             },
           ],
         }),
@@ -583,6 +834,19 @@ ${aiContext(analysis)}`,
           </button>
           <button
             type="button"
+            className={
+              workspaceView === "calendar" ? styles.commandSelected : ""
+            }
+            onClick={openCalendar}
+            disabled={!analysis}
+          >
+            월간 달력
+            {confirmedScheduleCount > 0 && (
+              <b className={styles.commandCount}>{confirmedScheduleCount}</b>
+            )}
+          </button>
+          <button
+            type="button"
             className={workspaceView === "handover" ? styles.commandSelected : ""}
             onClick={() => setWorkspaceView("handover")}
             disabled={!analysis}
@@ -657,11 +921,17 @@ ${aiContext(analysis)}`,
           <span>파일 내용은 읽지 않습니다</span>
           <span>원본 변경 없음</span>
           <span>인터넷·기관 외부 전송 없음</span>
+          <span>파일명 날짜는 시행일 후보</span>
+          <span>파일 수정일은 시행일이 아닙니다</span>
           <b>1차 · 파일명 기준</b>
           <em>2차 · 본문 파싱 예정</em>
         </div>
 
-        <div className={styles.explorerBody}>
+        <div
+          className={`${styles.explorerBody} ${
+            workspaceView === "calendar" ? styles.calendarBody : ""
+          }`}
+        >
           <aside className={styles.navigationPane} aria-label="폴더 탐색">
             <div className={styles.navGroup}>
               <strong>홈</strong>
@@ -674,6 +944,18 @@ ${aiContext(analysis)}`,
               >
                 <span aria-hidden="true">⌂</span>
                 인수인계 홈
+              </button>
+              <button
+                type="button"
+                className={workspaceView === "calendar" ? styles.navSelected : ""}
+                disabled={!analysis}
+                onClick={openCalendar}
+              >
+                <span className={styles.calendarNavIcon} aria-hidden="true">
+                  31
+                </span>
+                시행일 달력
+                {analysis && <b>{confirmedScheduleCount}</b>}
               </button>
               <button
                 type="button"
@@ -759,6 +1041,7 @@ ${aiContext(analysis)}`,
                 <ul>
                   <li>본문 미확인</li>
                   <li>파일명에서 추출한 제목 후보 미리보기</li>
+                  <li>월간 달력에서 시행일 확인</li>
                   <li>원본 파일 변경 없음</li>
                 </ul>
               </div>
@@ -848,7 +1131,16 @@ ${aiContext(analysis)}`,
                               {file.roleLabel}
                             </span>
                           </td>
-                          <td>{formatDate(file.lastModified)}</td>
+                          <td>
+                            <span>{formatDate(file.lastModified)}</span>
+                            <small>
+                              {file.dateCandidates.length
+                                ? `날짜 후보 ${file.dateCandidates
+                                    .map((candidate) => candidate.date)
+                                    .join(" · ")}`
+                                : "파일 수정일"}
+                            </small>
+                          </td>
                           <td>{formatBytes(file.size)}</td>
                         </tr>
                       ))}
@@ -860,6 +1152,311 @@ ${aiContext(analysis)}`,
                     </div>
                   )}
                 </div>
+              </>
+            ) : workspaceView === "calendar" ? (
+              <>
+                <div className={styles.paneHeading}>
+                  <div>
+                    <span className={styles.calendarHeadingIcon} aria-hidden="true">
+                      31
+                    </span>
+                    <h1>시행일 달력</h1>
+                  </div>
+                  <span>사용자 확인 {confirmedScheduleCount}건</span>
+                </div>
+
+                <section className={styles.calendarWorkspace}>
+                  <div className={styles.calendarToolbar}>
+                    <div>
+                      <button
+                        type="button"
+                        aria-label="이전 달"
+                        onClick={() =>
+                          setCalendarMonth((current) => shiftMonth(current, -1))
+                        }
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCalendarMonth(monthKeyFromDate(todayKey));
+                          setSelectedCalendarDate(todayKey);
+                        }}
+                      >
+                        오늘
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="다음 달"
+                        onClick={() =>
+                          setCalendarMonth((current) => shiftMonth(current, 1))
+                        }
+                      >
+                        ›
+                      </button>
+                    </div>
+                    <h2>
+                      {calendarMonth
+                        ? `${Number(calendarMonth.slice(0, 4))}년 ${Number(
+                            calendarMonth.slice(5, 7),
+                          )}월`
+                        : "날짜 정보 없음"}
+                    </h2>
+                    <div className={styles.calendarLegend}>
+                      <span>
+                        <i className={styles.legendCandidate} />
+                        시행일 후보
+                      </span>
+                      <span>
+                        <i className={styles.legendModified} />
+                        파일 수정일
+                      </span>
+                      <span>
+                        <i className={styles.legendConfirmed} />
+                        사용자 확인
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.calendarTableWrap}>
+                    <table className={styles.calendarTable}>
+                      <caption className={styles.visuallyHidden}>
+                        {calendarMonth} 시행일 후보 달력
+                      </caption>
+                      <thead>
+                        <tr>
+                          {["일", "월", "화", "수", "목", "금", "토"].map(
+                            (weekday) => (
+                              <th scope="col" key={weekday}>
+                                {weekday}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from(
+                          { length: Math.ceil(displayedCalendarDays.length / 7) },
+                          (_, weekIndex) => (
+                            <tr key={`week-${weekIndex}`}>
+                              {displayedCalendarDays
+                                .slice(weekIndex * 7, weekIndex * 7 + 7)
+                                .map((date, dayIndex) => {
+                                  if (!date) {
+                                    return (
+                                      <td
+                                        className={styles.calendarBlank}
+                                        key={`blank-${weekIndex}-${dayIndex}`}
+                                      />
+                                    );
+                                  }
+                                  const evidence =
+                                    calendarEvidenceByDate.get(date) ?? {
+                                      filename: [],
+                                      modified: [],
+                                      confirmed: [],
+                                    };
+                                  const total = new Set([
+                                    ...evidence.filename.map(
+                                      (file) => file.relativePath,
+                                    ),
+                                    ...evidence.modified.map(
+                                      (file) => file.relativePath,
+                                    ),
+                                    ...evidence.confirmed.map(
+                                      (file) => file.relativePath,
+                                    ),
+                                  ]).size;
+                                  const representative =
+                                    evidence.confirmed[0] ??
+                                    evidence.filename[0] ??
+                                    evidence.modified[0];
+                                  const dayNumber = Number(date.slice(8, 10));
+                                  return (
+                                    <td key={date}>
+                                      <button
+                                        type="button"
+                                        className={[
+                                          styles.calendarDay,
+                                          selectedCalendarDate === date
+                                            ? styles.calendarDaySelected
+                                            : "",
+                                          evidence.confirmed.length
+                                            ? styles.calendarDayConfirmed
+                                            : "",
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" ")}
+                                        aria-label={`${formatDateKey(date)}, 시행일 후보 ${
+                                          evidence.filename.length
+                                        }건, 파일 수정일 ${
+                                          evidence.modified.length
+                                        }건, 사용자 확인 ${
+                                          evidence.confirmed.length
+                                        }건`}
+                                        aria-current={
+                                          todayKey === date ? "date" : undefined
+                                        }
+                                        aria-pressed={
+                                          selectedCalendarDate === date
+                                        }
+                                        onClick={() => {
+                                          setSelectedCalendarDate(date);
+                                          if (representative) {
+                                            setSelectedFilePath(
+                                              representative.relativePath,
+                                            );
+                                            setSelectedBranchId(
+                                              representative.branchId,
+                                            );
+                                          }
+                                        }}
+                                      >
+                                        <span className={styles.calendarDayNumber}>
+                                          {dayNumber}
+                                          {todayKey === date && <small>오늘</small>}
+                                        </span>
+                                        <span className={styles.calendarDayEvents}>
+                                          {evidence.confirmed[0] && (
+                                            <em
+                                              className={styles.eventConfirmed}
+                                              title={
+                                                evidence.confirmed[0].analysisTitle
+                                              }
+                                            >
+                                              ✓{" "}
+                                              {evidence.confirmed[0].analysisTitle ||
+                                                evidence.confirmed[0].name}
+                                            </em>
+                                          )}
+                                          {evidence.filename[0] && (
+                                            <em
+                                              className={styles.eventCandidate}
+                                              title={
+                                                evidence.filename[0].analysisTitle
+                                              }
+                                            >
+                                              후보{" "}
+                                              {evidence.filename[0].analysisTitle ||
+                                                evidence.filename[0].name}
+                                            </em>
+                                          )}
+                                          {!evidence.confirmed[0] &&
+                                            evidence.modified[0] && (
+                                              <em
+                                                className={styles.eventModified}
+                                                title={
+                                                  evidence.modified[0].analysisTitle
+                                                }
+                                              >
+                                                수정{" "}
+                                                {evidence.modified[0]
+                                                  .analysisTitle ||
+                                                  evidence.modified[0].name}
+                                              </em>
+                                            )}
+                                          {total > 2 && <small>+{total - 2}개</small>}
+                                        </span>
+                                      </button>
+                                    </td>
+                                  );
+                                })}
+                            </tr>
+                          ),
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <section className={styles.dayAgenda}>
+                    <div className={styles.dayAgendaHeading}>
+                      <div>
+                        <strong>
+                          {selectedCalendarDate
+                            ? formatDateKey(selectedCalendarDate)
+                            : "날짜를 선택하세요"}
+                        </strong>
+                        <small>
+                          후보와 수정일을 비교한 뒤 실제 시행일을 확인하세요.
+                        </small>
+                      </div>
+                      <span>
+                        {new Set([
+                          ...selectedCalendarEvidence.filename,
+                          ...selectedCalendarEvidence.modified,
+                          ...selectedCalendarEvidence.confirmed,
+                        ]).size}
+                        건
+                      </span>
+                    </div>
+                    <div className={styles.agendaList}>
+                      {selectedCalendarEvidence.confirmed.map((file) => (
+                        <button
+                          type="button"
+                          className={styles.agendaConfirmed}
+                          key={`confirmed-${file.relativePath}`}
+                          onClick={() =>
+                            selectCalendarFile(file, selectedCalendarDate)
+                          }
+                        >
+                          <span>확인</span>
+                          <span>
+                            <strong>{file.branchLabel}</strong>
+                            <small>{file.name}</small>
+                          </span>
+                        </button>
+                      ))}
+                      {selectedCalendarEvidence.filename.map((file) => {
+                        const candidate = file.dateCandidates.find(
+                          (item) => item.date === selectedCalendarDate,
+                        );
+                        return (
+                          <button
+                            type="button"
+                            className={styles.agendaCandidate}
+                            key={`candidate-${file.relativePath}`}
+                            onClick={() =>
+                              selectCalendarFile(file, selectedCalendarDate)
+                            }
+                          >
+                            <span>후보</span>
+                            <span>
+                              <strong>{file.branchLabel}</strong>
+                              <small>
+                                {candidate?.raw} ·{" "}
+                                {dateContextLabel(
+                                  candidate?.contextHint ?? "unknown",
+                                )}
+                              </small>
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {selectedCalendarEvidence.modified.map((file) => (
+                        <button
+                          type="button"
+                          className={styles.agendaModified}
+                          key={`modified-${file.relativePath}`}
+                          onClick={() =>
+                            selectCalendarFile(file, selectedCalendarDate)
+                          }
+                        >
+                          <span>수정</span>
+                          <span>
+                            <strong>{file.branchLabel}</strong>
+                            <small>{file.name}</small>
+                          </span>
+                        </button>
+                      ))}
+                      {!selectedCalendarEvidence.confirmed.length &&
+                        !selectedCalendarEvidence.filename.length &&
+                        !selectedCalendarEvidence.modified.length && (
+                          <p>이 날짜에는 발견된 단서가 없습니다.</p>
+                        )}
+                    </div>
+                  </section>
+                </section>
               </>
             ) : (
               <>
@@ -955,6 +1552,167 @@ ${aiContext(analysis)}`,
                 <strong>추출 제목 미리보기</strong>
                 <p>파일을 선택하면 원본 파일명과 제목 후보를 비교합니다.</p>
               </div>
+            ) : workspaceView === "calendar" ? (
+              <div className={styles.calendarPreview}>
+                <div className={styles.calendarDateCard}>
+                  <small>선택한 날짜</small>
+                  <strong>
+                    {selectedCalendarDate
+                      ? formatDateKey(selectedCalendarDate)
+                      : "날짜를 선택하세요"}
+                  </strong>
+                  <span>
+                    후보 {selectedCalendarEvidence.filename.length} · 수정{" "}
+                    {selectedCalendarEvidence.modified.length} · 확인{" "}
+                    {selectedCalendarEvidence.confirmed.length}
+                  </span>
+                </div>
+
+                <label className={styles.scheduleFileSelect}>
+                  <span>확인할 파일</span>
+                  <select
+                    value={selectedFilePath}
+                    onChange={(event) => {
+                      const file = allFiles.find(
+                        (item) => item.relativePath === event.target.value,
+                      );
+                      setSelectedFilePath(event.target.value);
+                      if (file) setSelectedBranchId(file.branchId);
+                    }}
+                  >
+                    {allFiles.map((file) => (
+                      <option key={file.relativePath} value={file.relativePath}>
+                        {file.branchLabel} · {file.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {selectedFile && (
+                  <>
+                    <div className={styles.scheduleFileSummary}>
+                      <span className={styles.fileGlyph}>
+                        {selectedFile.extension.slice(0, 4)}
+                      </span>
+                      <span>
+                        <strong>
+                          {selectedFile.analysisTitle || "제목 단서 부족"}
+                        </strong>
+                        <small>{selectedFile.name}</small>
+                      </span>
+                    </div>
+
+                    <strong className={styles.previewSubheading}>날짜 근거</strong>
+                    <div className={styles.dateEvidenceList}>
+                      {selectedFile.dateCandidates.map((candidate) => (
+                        <button
+                          type="button"
+                          key={`${candidate.date}-${candidate.raw}`}
+                          className={
+                            selectedCalendarDate === candidate.date
+                              ? styles.dateEvidenceSelected
+                              : ""
+                          }
+                          onClick={() => {
+                            setSelectedCalendarDate(candidate.date);
+                            setCalendarMonth(monthKeyFromDate(candidate.date));
+                          }}
+                        >
+                          <span className={styles.evidenceCandidate}>후보</span>
+                          <span>
+                            <strong>{formatDateKey(candidate.date)}</strong>
+                            <small>
+                              {candidate.source === "filename"
+                                ? "파일명"
+                                : "폴더명"}{" "}
+                              ‘{candidate.raw}’ ·{" "}
+                              {dateContextLabel(candidate.contextHint)}
+                            </small>
+                          </span>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className={
+                          selectedCalendarDate ===
+                          dateKeyFromTimestamp(selectedFile.lastModified)
+                            ? styles.dateEvidenceSelected
+                            : ""
+                        }
+                        onClick={() => {
+                          const date = dateKeyFromTimestamp(
+                            selectedFile.lastModified,
+                          );
+                          setSelectedCalendarDate(date);
+                          setCalendarMonth(monthKeyFromDate(date));
+                        }}
+                      >
+                        <span className={styles.evidenceModified}>수정</span>
+                        <span>
+                          <strong>{formatDate(selectedFile.lastModified)}</strong>
+                          <small>파일 시스템의 마지막 수정일</small>
+                        </span>
+                      </button>
+                    </div>
+
+                    <label className={styles.manualDateField}>
+                      <span>실제 시행일 직접 선택</span>
+                      <input
+                        type="date"
+                        value={selectedCalendarDate}
+                        onChange={(event) => {
+                          setSelectedCalendarDate(event.target.value);
+                          setCalendarMonth(
+                            monthKeyFromDate(event.target.value),
+                          );
+                        }}
+                      />
+                    </label>
+
+                    <button
+                      className={styles.confirmDateButton}
+                      type="button"
+                      disabled={!selectedCalendarDate}
+                      onClick={() =>
+                        confirmScheduleDate(
+                          selectedFile,
+                          selectedCalendarDate,
+                          selectedDateBasis,
+                        )
+                      }
+                    >
+                      ✓ 이 날짜를 실제 시행일로 체크
+                    </button>
+
+                    {selectedFileOverride && (
+                      <div className={styles.confirmedSchedule} role="status">
+                        <span>사용자 확인 시행일</span>
+                        <strong>
+                          {formatDateKey(selectedFileOverride.date)}
+                        </strong>
+                        <small>
+                          {selectedFileOverride.status === "edited"
+                            ? "담당자가 날짜를 직접 수정함"
+                            : selectedFileOverride.basis === "filename"
+                              ? "파일명 후보를 담당자가 확인함"
+                              : "파일 수정일을 담당자가 확인함"}
+                        </small>
+                        <button
+                          type="button"
+                          onClick={() => clearScheduleDate(selectedFile)}
+                        >
+                          체크 해제
+                        </button>
+                      </div>
+                    )}
+
+                    <div className={styles.previewCaution}>
+                      파일 수정일은 편집·복사로 바뀔 수 있습니다. 담당자가 체크한
+                      날짜만 실제 시행일로 기록합니다.
+                    </div>
+                  </>
+                )}
+              </div>
             ) : selectedFile ? (
               <div className={styles.filePreview}>
                 <div className={styles.previewFileIcon}>
@@ -986,6 +1744,24 @@ ${aiContext(analysis)}`,
                       {selectedFile.periods.length
                         ? selectedFile.periods.join(" · ")
                         : "기간 단서 없음"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>날짜 후보</dt>
+                    <dd>
+                      {selectedFile.dateCandidates.length
+                        ? selectedFile.dateCandidates
+                            .map((candidate) => candidate.date)
+                            .join(" · ")
+                        : "정확한 날짜 없음"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>사용자 확인</dt>
+                    <dd>
+                      {selectedFileOverride
+                        ? formatDateKey(selectedFileOverride.date)
+                        : "시행일 미확인"}
                     </dd>
                   </div>
                   <div>
@@ -1109,7 +1885,9 @@ ${aiContext(analysis)}`,
         <footer className={styles.statusBar}>
           <span>
             {analysis
-              ? `${analysis.fileCount}개 항목 · ${formatBytes(analysis.totalSize)}`
+              ? `${analysis.fileCount}개 항목 · ${formatBytes(
+                  analysis.totalSize,
+                )} · 시행일 확인 ${confirmedScheduleCount}건`
               : "폴더를 선택하면 분석을 시작합니다."}
           </span>
           <span>

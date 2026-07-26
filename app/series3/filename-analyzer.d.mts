@@ -5,9 +5,24 @@ export type InventoryFile = {
   lastModified: number;
 };
 
+export type FilenameDateCandidate = {
+  date: string;
+  raw: string;
+  source: "filename" | "folder";
+  contextHint:
+    | "execution"
+    | "plan"
+    | "deadline"
+    | "written"
+    | "reference"
+    | "unknown";
+  confidence: "high" | "medium";
+};
+
 export type AnalyzedFilename = InventoryFile & {
   extension: string;
   analysisTitle: string;
+  dateCandidates: FilenameDateCandidate[];
   periods: string[];
   versionTags: string[];
   role: string;

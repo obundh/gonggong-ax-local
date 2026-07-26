@@ -10,6 +10,15 @@
  * @typedef {"PLAN"|"REQUEST"|"REVIEW"|"NOTICE"|"EXECUTION"|"MEETING"|"INSPECTION"|"PROGRESS"|"RESULT"|"SETTLEMENT"|"ACCEPTANCE"|"CONTINUOUS"|"REFERENCE"|"TEMPLATE"|"ATTACHMENT"|"UNKNOWN"} DocumentRole
  */
 
+/**
+ * @typedef {Object} FilenameDateCandidate
+ * @property {string} date
+ * @property {string} raw
+ * @property {"filename"|"folder"} source
+ * @property {"execution"|"plan"|"deadline"|"written"|"reference"|"unknown"} contextHint
+ * @property {"high"|"medium"} confidence
+ */
+
 const ROLE_LABELS = {
   PLAN: "계획·착수",
   REQUEST: "요청·접수",
@@ -111,6 +120,52 @@ const ROLE_NOISE_PATTERN =
 const VERSION_PATTERN =
   /(?:최종(?:본)?|진짜\s*최종|수정(?:본)?|보완(?:본)?|검토(?:본)?|초안|사본|복사본|백업|구버전|old|copy|v(?:er)?\.?\s*\d+|\d+\s*차)(?:\s*\(\s*안\s*\))?/giu;
 
+const EXACT_DATE_PATTERNS = [
+  {
+    pattern:
+      /(?<!\d)((?:19|20)\d{2})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일(?!\d)/gu,
+    yearGroup: 1,
+    monthGroup: 2,
+    dayGroup: 3,
+  },
+  {
+    pattern:
+      /(?<!\d)((?:19|20)\d{2})\s*([._-])\s*(\d{1,2})\s*\2\s*(\d{1,2})(?:\s*\.)?(?!\d)/gu,
+    yearGroup: 1,
+    monthGroup: 3,
+    dayGroup: 4,
+  },
+  {
+    pattern: /(?<!\d)((?:19|20)\d{2})(\d{2})(\d{2})(?!\d)/gu,
+    yearGroup: 1,
+    monthGroup: 2,
+    dayGroup: 3,
+  },
+];
+
+const DATE_CONTEXT_RULES = [
+  {
+    hint: "deadline",
+    pattern: /마감|기한|제출|접수|신청/gu,
+  },
+  {
+    hint: "plan",
+    pattern: /계획|예정|일정|기안|추진\s*방안/gu,
+  },
+  {
+    hint: "written",
+    pattern: /작성|보고|결과|회의록/gu,
+  },
+  {
+    hint: "reference",
+    pattern: /기준|현재|현황/gu,
+  },
+  {
+    hint: "execution",
+    pattern: /시행|실시|개최|훈련|점검|행사|회의|교육|착수/gu,
+  },
+];
+
 function fileExtension(name) {
   const dot = name.lastIndexOf(".");
   return dot > -1 ? name.slice(dot + 1).toUpperCase() : "파일";
@@ -135,6 +190,167 @@ function cleanFolderLabel(value) {
     .replace(/\b(?:19|20)\d{2}(?:년)?\b/gu, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function isValidCalendarDate(year, month, day) {
+  if (
+    year < 1900 ||
+    year > 2099 ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return false;
+  }
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  return (
+    candidate.getUTCFullYear() === year &&
+    candidate.getUTCMonth() === month - 1 &&
+    candidate.getUTCDate() === day
+  );
+}
+
+function isoCalendarDate(year, month, day) {
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(
+    2,
+    "0",
+  )}-${String(day).padStart(2, "0")}`;
+}
+
+function dateContextHint(value, start, end) {
+  let bestHint = "unknown";
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let bestPriority = Number.POSITIVE_INFINITY;
+
+  DATE_CONTEXT_RULES.forEach((rule, priority) => {
+    for (const match of value.matchAll(
+      new RegExp(rule.pattern.source, rule.pattern.flags),
+    )) {
+      const matchStart = match.index ?? 0;
+      const matchEnd = matchStart + match[0].length;
+      const distance =
+        matchEnd < start ? start - matchEnd : matchStart > end ? matchStart - end : 0;
+      if (
+        distance <= 16 &&
+        (distance < bestDistance ||
+          (distance === bestDistance && priority < bestPriority))
+      ) {
+        bestHint = rule.hint;
+        bestDistance = distance;
+        bestPriority = priority;
+      }
+    }
+  });
+
+  return bestHint;
+}
+
+function isExplicitDateFalsePositive(value, start, end) {
+  const before = value.slice(Math.max(0, start - 24), start);
+  const after = value.slice(end, Math.min(value.length, end + 12));
+  const compactBefore = before.replace(/[\s_.()\[\]-]+/gu, "");
+
+  if (
+    /(?:문서|관리|접수|공고|계약|등록|사건|참조|시행)?번호$/u.test(
+      compactBefore,
+    )
+  ) {
+    return true;
+  }
+  if (/(?:version|ver|rev|v|버전)$/iu.test(compactBefore)) return true;
+  if (
+    /제$/u.test(compactBefore) &&
+    /^[\s_.()\[\]-]*(?:호|번)(?:$|[\s_.()\[\]-])/u.test(after)
+  ) {
+    return true;
+  }
+  return /^[\s_.()\[\]-]*(?:호|번|차|원|건|명)(?:$|[\s_.()\[\]-])/u.test(
+    after,
+  );
+}
+
+function extractExactDateMatches(value, source) {
+  const normalized = value.normalize("NFKC");
+  const matches = [];
+
+  for (const definition of EXACT_DATE_PATTERNS) {
+    const expression = new RegExp(
+      definition.pattern.source,
+      definition.pattern.flags,
+    );
+    for (const match of normalized.matchAll(expression)) {
+      const start = match.index ?? 0;
+      const end = start + match[0].length;
+      if (
+        matches.some(
+          (existing) => start < existing.end && end > existing.start,
+        )
+      ) {
+        continue;
+      }
+
+      const year = Number(match[definition.yearGroup]);
+      const month = Number(match[definition.monthGroup]);
+      const day = Number(match[definition.dayGroup]);
+      if (
+        !isValidCalendarDate(year, month, day) ||
+        isExplicitDateFalsePositive(normalized, start, end)
+      ) {
+        continue;
+      }
+
+      matches.push({
+        start,
+        end,
+        candidate: {
+          date: isoCalendarDate(year, month, day),
+          raw: match[0],
+          source,
+          contextHint: dateContextHint(normalized, start, end),
+          confidence: source === "filename" ? "high" : "medium",
+        },
+      });
+    }
+  }
+
+  return matches.sort((left, right) => left.start - right.start);
+}
+
+function filenameDateCandidates(file) {
+  const candidates = [];
+  const seenDates = new Set();
+  const addMatches = (matches) => {
+    for (const match of matches) {
+      if (seenDates.has(match.candidate.date)) continue;
+      seenDates.add(match.candidate.date);
+      candidates.push(match.candidate);
+    }
+  };
+
+  addMatches(extractExactDateMatches(withoutExtension(file.name), "filename"));
+
+  const folders = file.relativePath
+    .split(/[\\/]/)
+    .filter(Boolean)
+    .slice(0, -1)
+    .reverse();
+  for (const folder of folders) {
+    addMatches(extractExactDateMatches(folder, "folder"));
+  }
+
+  return candidates;
+}
+
+function removeExactFilenameDates(value) {
+  const matches = extractExactDateMatches(value, "filename");
+  if (matches.length === 0) return value;
+
+  let result = value;
+  for (const match of [...matches].reverse()) {
+    result = `${result.slice(0, match.start)} ${result.slice(match.end)}`;
+  }
+  return result;
 }
 
 function extractPeriods(value) {
@@ -256,7 +472,7 @@ function classifyBranch(relativePath, name) {
 }
 
 function normalizeAnalysisTitle(name) {
-  return cleanSpacing(withoutExtension(name))
+  return cleanSpacing(removeExactFilenameDates(withoutExtension(name)))
     .replace(/\b(?:19|20)\d{2}(?:년)?\b/gu, " ")
     .replace(/(?:상반기|하반기|[1-4]\s*분기|\d{1,2}\s*월)/gu, " ")
     .replace(new RegExp(VERSION_PATTERN.source, VERSION_PATTERN.flags), " ")
@@ -416,6 +632,7 @@ export function analyzeFilenameInventory(inventory) {
       ...file,
       extension: fileExtension(file.name),
       analysisTitle: normalizeAnalysisTitle(file.name),
+      dateCandidates: filenameDateCandidates(file),
       periods: extractPeriods(`${file.relativePath} ${file.name}`),
       versionTags: extractVersionTags(file.name),
       role,
