@@ -1,4 +1,23 @@
-# vinext-starter
+# 공공 AX 로컬 시리즈
+
+공공업무를 외부 전송 없이 처리하는 로컬 우선 도구 모음입니다.
+
+- `/`: 공공 AX 로컬 시리즈 1 업무공간
+- `/series2`: 공공 AX 로컬 시리즈 2 `문서살림`
+
+## 시리즈 2 · 문서살림
+
+HWPX, DOCX, UTF-8 TXT의 본문을 브라우저 메모리에서 읽어 맞춤법,
+띄어쓰기, 문서 표기, 공공언어를 규칙 기반으로 검사합니다.
+
+- 국립국어원 공공언어 용어 1,331개를 빌드에 포함
+- 높은 확신도의 기계적 오류만 `안전 수정`으로 일괄 적용
+- 문맥에 따라 달라지는 쉬운 말 제안은 담당자가 한 건씩 선택
+- 원본 파일은 변경하지 않고 수정본 TXT와 검사보고서 CSV를 내려받음
+- 파일 내용 업로드 API, 서버 저장소, 외부 맞춤법 API를 사용하지 않음
+
+현재 버전은 구형 바이너리 HWP를 직접 읽지 않습니다. HWPX로 다시 저장해야
+하며, 원본 형식을 보존한 HWPX/DOCX 재생성은 후속 단계입니다.
 
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
@@ -89,7 +108,7 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 - `npm run dev`: start local development
 - `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm test`: build both series and verify the rendered HTML
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More
