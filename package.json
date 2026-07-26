@@ -1,5 +1,5 @@
 {
-  "name": "public-ax-local-series-1",
+  "name": "gonggong-ax-local-series-2-document-review",
   "version": "0.1.0",
   "private": true,
   "main": "desktop/main.mjs",
@@ -20,12 +20,12 @@
     "@rhwp/core": "^0.8.0",
     "drizzle-orm": "0.45.2",
     "jszip": "^3.10.1",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "next": "16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/vite-plugin": "1.47.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
@@ -37,17 +37,21 @@
     "electron-builder": "^26.15.3",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
+    "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "vite": "8.1.5",
+    "wrangler": "4.114.0"
+  },
+  "overrides": {
+    "postcss": "8.5.23",
+    "sharp": "0.35.3"
   },
   "type": "module",
   "build": {
     "appId": "kr.local.publicax",
-    "productName": "공공 AX 로컬",
+    "productName": "공공AX 로컬 시리즈 2 - 문서 검수",
     "asar": false,
     "compression": "store",
     "npmRebuild": false,
@@ -58,6 +62,10 @@
       "desktop/**/*",
       "dist/**/*",
       "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md",
+      "docs/LEGAL_REVIEW.md",
+      "docs/USER_GUIDE.md",
       "!node_modules{,/**/*}"
     ],
     "win": {
@@ -69,7 +77,7 @@
           ]
         }
       ],
-      "artifactName": "Public-AX-Local-${version}-win-x64.${ext}"
+      "artifactName": "GonggongAX-Series2-Document-Review-${version}-win-x64.${ext}"
     }
   }
 }

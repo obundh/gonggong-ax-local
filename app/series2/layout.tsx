@@ -11,34 +11,51 @@ export async function generateMetadata(): Promise<Metadata> {
     requestHeaders.get("x-forwarded-proto") ??
     (host.startsWith("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
-  const imageUrl = `${origin}/og.png`;
+  const imageUrl = `${origin}/document-review-hero.png`;
+  const title = "공공AX 로컬 시리즈 2 - 문서 검수";
+  const description =
+    "HWP, HWPX, DOCX, TXT를 외부로 보내지 않고 페이지별로 미리 보며 맞춤법·띄어쓰기·공공언어를 검사하는 Windows 로컬 문서 검수 도구입니다.";
 
   return {
-    title: "문서살림 | 공공 AX 로컬 시리즈 2",
-    description:
-      "HWP, HWPX, DOCX, TXT를 외부로 보내지 않고 페이지별로 미리 보고 맞춤법·띄어쓰기·공공언어 규칙으로 검사합니다.",
-    applicationName: "공공 AX 로컬 시리즈 2 · 문서살림",
+    title,
+    description,
+    applicationName: title,
+    keywords: [
+      "공공AX",
+      "공공AX 로컬",
+      "문서 검수",
+      "한글 맞춤법 검사",
+      "HWP 검사",
+      "HWPX 검사",
+      "공공언어",
+      "로컬 AI",
+      "오프라인 문서 검사",
+    ],
+    robots: {
+      index: true,
+      follow: true,
+    },
     alternates: {
       canonical: `${origin}/series2`,
     },
     openGraph: {
-      title: "문서살림 | 공공 AX 로컬 시리즈 2",
-      description: "공공문서를 로컬 규칙으로 읽고, 근거와 함께 고칩니다.",
+      title,
+      description,
       type: "website",
       url: `${origin}/series2`,
       images: [
         {
           url: imageUrl,
-          width: 1536,
-          height: 1024,
-          alt: "공공문서 로컬 검수기 문서살림",
+          width: 1747,
+          height: 900,
+          alt: "공공AX 로컬 시리즈 2 문서 검수 사용 화면 안내",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "문서살림 | 공공 AX 로컬 시리즈 2",
-      description: "외부 전송 없이 공공문서를 검사하는 로컬 규칙 엔진",
+      title,
+      description,
       images: [imageUrl],
     },
   };

@@ -1,77 +1,58 @@
 # 출처 및 제3자 구성요소
 
+이 파일은 배포물에 포함되는 주요 데이터와 직접 의존성의 고지를 정리합니다.
+각 구성요소의 저작권은 해당 권리자에게 있고 원문 라이선스가 우선합니다.
+
 ## 국립국어원 공공언어 데이터
 
 - 자료명: 문화체육관광부 국립국어원_쉽고 바른 공공언어 쓰기 평가용 용어 목록
+- 제공기관: 국립국어원
 - 기준일: 2024-02-28
-- 제공처: 공공데이터포털
 - 원문: <https://www.data.go.kr/data/15130006/fileData.do>
 - 이용조건: 공공누리 제1유형(출처표시)
+- 변환물: `data/public-language.json`
 
-이 프로젝트의 `data/public-language.json`은 위 CSV의 용어, 이표기·오표기,
-대안어를 로컬 검사에 적합한 구조로 변환한 스냅샷입니다.
+원자료의 용어, 이표기·오표기, 대안어를 로컬 검사에 적합한 JSON 구조로
+변환했습니다.
 
-## JSZip
+## 주요 오픈소스 소프트웨어
 
-- 프로젝트: <https://stuk.github.io/jszip/>
-- 라이선스: MIT 또는 GPLv3
-- 사용 목적: 브라우저 안에서 DOCX와 HWPX ZIP/XML 구조 읽기
+| 구성요소 | 버전 | 라이선스 | 사용 목적 |
+| --- | --- | --- | --- |
+| @rhwp/core | 0.8.0 | MIT | HWP 5.0·HWPX 파싱 및 페이지 렌더링 |
+| JSZip | 3.10.1 | MIT 선택 | DOCX·HWPX ZIP/XML 읽기 |
+| React / React DOM | 19.2.8 | MIT | 사용자 화면 |
+| Next.js | 16.2.12 | MIT | 웹 애플리케이션 구조 |
+| Drizzle ORM | 0.45.2 | Apache-2.0 | 선택적 데이터 계층 |
+| Electron | 43.2.0 | MIT | Windows 데스크톱 실행 |
+| electron-builder | 26.15.3 | MIT | 포터블 EXE 패키징 |
+| vinext | 0.0.50 | MIT | 애플리케이션 빌드 |
+| TypeScript | 5.9.3 | Apache-2.0 | 개발·빌드 |
 
-이 프로젝트는 JSZip을 MIT 라이선스로 사용합니다.
+JSZip은 이 프로젝트에서 GPL이 아닌 MIT 선택지로 사용합니다. 각 npm 패키지에
+포함된 LICENSE 파일과 배포물의 Electron/Chromium 라이선스 문서에 전체 조건과
+저작권 고지가 있습니다.
 
-> Copyright (c) 2009-2016 Stuart Knightley, David Duponchel, Franz
-> Buchinger, António Afonso
->
-> Permission is hereby granted, free of charge, to any person obtaining a
-> copy of this software and associated documentation files (the "Software"),
-> to deal in the Software without restriction, including without limitation
-> the rights to use, copy, modify, merge, publish, distribute, sublicense,
-> and/or sell copies of the Software, and to permit persons to whom the
-> Software is furnished to do so, subject to the following conditions:
->
-> The above copyright notice and this permission notice shall be included in
-> all copies or substantial portions of the Software.
->
-> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-> FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-> DEALINGS IN THE SOFTWARE.
+## MIT 라이선스 공통 조건 요약
 
-## rhwp
+MIT 구성요소는 저작권 고지와 허가 문구를 모든 복제물 또는 중요한 부분에
+포함하는 조건으로 사용·복제·수정·배포할 수 있으며, 보증 없이 제공됩니다.
+정확한 원문은 각 패키지의 LICENSE 파일을 따릅니다.
 
-- 프로젝트: <https://github.com/edwardkim/rhwp>
-- 라이선스: MIT
-- 사용 목적: 브라우저 안에서 구형 HWP 5.0과 HWPX를 해석하고 페이지 SVG로 조판
+## Apache License 2.0 공통 조건 요약
 
-> Copyright (c) 2025-2026 Edward Kim
->
-> Permission is hereby granted, free of charge, to any person obtaining a copy
-> of this software and associated documentation files (the "Software"), to deal
-> in the Software without restriction, including without limitation the rights
-> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-> copies of the Software, and to permit persons to whom the Software is
-> furnished to do so, subject to the following conditions:
->
-> The above copyright notice and this permission notice shall be included in all
-> copies or substantial portions of the Software.
->
-> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-> SOFTWARE.
+Apache-2.0 구성요소는 라이선스 사본과 필요한 고지를 유지해야 하며, 변경 파일에는
+변경 사실을 표시해야 합니다. 특허와 상표 조건을 포함한 정확한 원문은
+<https://www.apache.org/licenses/LICENSE-2.0>을 따릅니다.
 
-HWP와 HWPX는 한글과컴퓨터의 등록 상표입니다. 이 프로젝트와 rhwp는
-한글과컴퓨터와 독립적으로 개발된 오픈 소스 소프트웨어입니다.
+## 형식명·상표 및 비제휴 고지
 
-## 내장 맞춤법 규칙
+HWP와 HWPX는 파일 형식명이며 관련 명칭과 상표의 권리는 해당 권리자에게 있습니다.
+이 프로젝트는 한글과컴퓨터가 제작, 보증, 후원 또는 공식 인증한 제품이 아닙니다.
 
-`app/series2/rule-engine.ts`의 맞춤법·띄어쓰기·문서 표기 패턴은 국립국어원
-어문 규범을 참고해 이 프로젝트에서 작성한 실행 규칙입니다. 자동 수정 결과는
-원문의 법적·정책적 의미를 보증하지 않으며, 최종 검토 책임은 문서 담당자에게
-있습니다.
+## 내장 검사 규칙
+
+`app/series2/rule-engine.ts`의 맞춤법·띄어쓰기·문법·표기 패턴은 공개된
+한국어 규범을 참고해 이 프로젝트에서 작성한 실행 규칙입니다. 자동 제안은
+원문의 법적·정책적 의미나 최종 정확성을 보증하지 않으며, 최종 검수 책임은
+문서 담당자에게 있습니다.

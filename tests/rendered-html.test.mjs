@@ -44,7 +44,7 @@ test("server-renders the local public-document checker", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>문서살림 \| 공공 AX 로컬 시리즈 2<\/title>/i);
+  assert.match(html, /<title>공공AX 로컬 시리즈 2 - 문서 검수<\/title>/i);
   assert.match(html, /공공문서 로컬 검수기/);
   assert.match(html, /HWP · HWPX · DOCX · TXT/);
   assert.match(html, /원문 페이지 이동/);

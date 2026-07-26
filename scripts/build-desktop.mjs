@@ -7,7 +7,7 @@ const projectRoot = path.resolve(import.meta.dirname, "..");
 const packageJson = JSON.parse(
   await readFile(path.join(projectRoot, "package.json"), "utf8"),
 );
-const artifactName = `Public-AX-Local-${packageJson.version}-win-x64.exe`;
+const artifactName = `GonggongAX-Series2-Document-Review-${packageJson.version}-win-x64.exe`;
 const temporaryOutput = await mkdtemp(
   path.join(os.tmpdir(), "public-ax-electron-build-"),
 );

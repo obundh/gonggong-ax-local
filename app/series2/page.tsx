@@ -712,8 +712,8 @@ export default function SeriesTwoPage() {
             가
           </span>
           <div>
-            <strong>공공 AX 로컬</strong>
-            <small>시리즈 2 · 문서 검수</small>
+            <strong>공공AX 로컬</strong>
+            <small>시리즈 2 - 문서 검수</small>
           </div>
         </div>
 
@@ -816,8 +816,8 @@ export default function SeriesTwoPage() {
       <section className={styles.workspace}>
         <header className={styles.topbar}>
           <div>
-            <p>공공문서 로컬 검수기</p>
-            <h1>문서살림</h1>
+            <p>외부 전송 없는 공공문서 로컬 검수기</p>
+            <h1>공공AX 로컬 시리즈 2 - 문서 검수</h1>
           </div>
           <div className={styles.topActions}>
             <span className={styles.localBadge}>

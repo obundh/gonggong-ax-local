@@ -1,160 +1,83 @@
-# 공공 AX 로컬 시리즈
+# 공공AX 로컬 시리즈 2 - 문서 검수
 
-공공업무를 외부 전송 없이 처리하는 로컬 우선 도구 모음입니다.
+HWP·HWPX·DOCX·TXT 문서를 외부 서버로 보내지 않고, Windows PC 안에서
+맞춤법·띄어쓰기·문서 표기·공공언어 규칙으로 검사하는 로컬 우선 도구입니다.
 
-- `/`: 공공 AX 로컬 시리즈 1 업무공간
-- `/series2`: 공공 AX 로컬 시리즈 2 `문서살림`
-- `/series3`: `공공 AX 로컬 시리즈 - 인수인계`
+![공공AX 로컬 시리즈 2 문서 검수 사용 화면](public/document-review-hero.png)
 
-## Windows 로컬 실행파일
+## 내려받기
 
-배포 서버 없이 한 PC에서 세 시리즈를 함께 실행하는 포터블 EXE를 지원합니다.
-설치 과정은 없으며 실행 시 PC 내부의 임시 로컬 주소만 사용합니다.
+[최신 Windows 실행파일](../../releases/latest)을 내려받아
+`GonggongAX-Series2-Document-Review-0.1.0-win-x64.exe`를 실행합니다.
+설치 과정이나 별도 서버 설정은 없습니다. 처음 실행할 때 Windows
+SmartScreen이 게시자를 확인하지 못할 수 있습니다. 현재 실행파일은 코드 서명되지
+않았으므로 릴리스의 SHA-256 값과 일치하는지 확인해 주세요.
+
+## 3분 사용법
+
+1. 실행파일을 열고 `문서 불러오기`를 누릅니다.
+2. HWP, HWPX, DOCX 또는 UTF-8 TXT 파일을 선택합니다.
+3. 원문 미리보기의 형광펜과 말풍선으로 오류 위치와 제안을 확인합니다.
+4. `맞춤법`, `띄어쓰기`, `공공언어` 등 필요한 범주만 눌러 미리보기를 거릅니다.
+5. 결과를 한 건씩 적용하거나, 확신도가 높은 항목만 `안전 수정`으로 적용합니다.
+6. 수정본 TXT 또는 검사보고서 CSV를 내려받습니다. 원본 파일은 바꾸지 않습니다.
+
+화면별 설명과 제한사항은 [사용 설명서](docs/USER_GUIDE.md)에 정리했습니다.
+앱 안의 `미묘한 맞춤법 10건 열기`를 누르면 파일 없이 바로 시험할 수 있습니다.
+
+## 주요 기능
+
+- HWP/HWPX의 글꼴·표·그림·쪽 배치를 페이지 SVG로 로컬 재현
+- 쪽별 원문 미리보기와 현재 쪽 검사 결과를 나란히 표시
+- 오류 위치를 범주별 형광펜으로 표시하고 마우스를 올리면 제안 말풍선 표시
+- 맞춤법·띄어쓰기·공공언어 등 범주를 단독 또는 복수 선택
+- 최초 원문과 수정 적용 결과를 줄별 전후 비교
+- 국립국어원 공공언어 용어 1,331개를 빌드에 포함
+- 외부 맞춤법 API, 파일 업로드 API, 원격 저장소를 사용하지 않음
+
+## 지원 범위와 한계
+
+- HWP 5.0, HWPX, DOCX, UTF-8 TXT를 지원합니다.
+- 암호가 걸렸거나 배포용인 문서, HWP 5.0보다 오래된 형식은 열리지 않을 수 있습니다.
+- DOCX/TXT 미리보기는 읽기 편한 가상 페이지입니다.
+- 원본 형식을 보존한 DOCX 재생성과 HWP/HWPX 원본 직접 수정은 아직 지원하지 않습니다.
+- 규칙 기반 제안은 법률·정책·행정 문맥의 정답을 보장하지 않습니다. 배포 전 담당자가
+  원문과 근거를 최종 확인해야 합니다.
+
+## 개발 및 빌드
+
+요구 환경은 Node.js 22.13 이상과 Windows x64입니다.
 
 ```bash
+npm ci
+npm test
 npm run desktop:build
 ```
 
-결과물은 `release/Public-AX-Local-0.1.0-win-x64.exe`에 생성됩니다. HWP 파서
-WASM과 화면 자산이 실행파일에 포함되며 문서 내용은 외부 서버로 전송하지
-않습니다. 시리즈 1·3의 선택적 Ollama 기능은 이 PC의
-`127.0.0.1:11434`만 호출합니다.
-
-## 시리즈 2 · 문서살림
-
-HWP 5.0, HWPX, DOCX, UTF-8 TXT의 본문을 브라우저 메모리에서 읽어 맞춤법,
-띄어쓰기, 문서 표기, 공공언어를 규칙 기반으로 검사합니다.
-
-- HWP/HWPX는 글꼴·표·그림·쪽 배치를 페이지 SVG로 로컬 재현
-- 쪽별 원문 미리보기와 현재 쪽 검사 결과를 나란히 표시
-- 원문 오류 위치를 범주별 형광펜으로 표시하고 마우스를 올리면 제안 말풍선 표시
-- 전체 상태에서 범주 하나를 누르면 해당 범주만, 이후에는 여러 범주를 복수 선택
-- 최초 원문과 적용된 수정·남은 제안을 줄별 전후 비교로 확인
-- 국립국어원 공공언어 용어 1,331개를 빌드에 포함
-- 높은 확신도의 기계적 오류만 `안전 수정`으로 일괄 적용
-- 문맥에 따라 달라지는 쉬운 말 제안은 담당자가 한 건씩 선택
-- 원본 파일은 변경하지 않고 수정본 TXT와 검사보고서 CSV를 내려받음
-- 파일 내용 업로드 API, 서버 저장소, 외부 맞춤법 API를 사용하지 않음
-
-암호·배포용 문서나 HWP 5.0보다 오래된 형식은 열리지 않을 수 있습니다.
-DOCX/TXT는 현재 본문을 읽기 편한 가상 페이지로 나누며, 원본 형식을 보존한
-DOCX 재생성과 HWP/HWPX 원본 파일 직접 수정은 후속 단계입니다.
-
-## 공공 AX 로컬 시리즈 - 인수인계
-
-사용자가 선택한 폴더의 이름과 파일명, 확장자, 수정일만 브라우저에서 분석해
-Windows 파일 탐색기형 1차 인수인계 업무지도를 만듭니다.
-
-- 문서 본문을 읽지 않고 업무 가지와 문서 역할 후보를 분류
-- 원본 파일명과 파일명에서 추출한 분석용 제목 후보 비교
-- 파일명 날짜 후보와 마지막 수정일을 분리해 월간·목록 달력에 표시
-- 연도·월 선택과 이전·오늘·다음 버튼으로 일정 기간을 빠르게 이동
-- 담당자가 확인한 실제 시행일을 JSON·Markdown에 별도 기록
-- 완료·진행·상시관리 단서를 확정이 아닌 추정으로 표시
-- 모든 판단에 근거 파일명을 연결
-- Markdown 인수인계 초안과 JSON 분석 결과 다운로드
-- 선택적으로 이 PC의 Ollama 모델에 파일명 분석 결과만 보내 초안을 정리
-- 파일 내용 업로드 API, 서버 저장소, 원본 변경 없음
-
-브라우저의 폴더 선택 결과에는 빈 폴더가 포함되지 않으며, 파일명만으로 실제
-시행·결재·완료 상태를 확정할 수 없습니다. 본문 파싱 후 재분류는 다음
-단계입니다.
-
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
-
-## Prerequisites
-
-- Node.js `>=22.13.0`
-
-## Quick Start
+포터블 실행파일은
+`release/GonggongAX-Series2-Document-Review-0.1.0-win-x64.exe`에 생성됩니다.
+실행 시 PC 내부의 임시 주소만 사용하며 시작 화면은 `/series2`입니다.
 
 ```bash
-npm install
 npm run dev
-npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+개발 화면은 `http://localhost:3000/series2`에서 확인합니다.
 
-## Included Shape
+## 데이터·라이선스·법적 고지
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+- 공공언어 데이터: 국립국어원, 공공누리 제1유형(출처표시)
+- 프로젝트 자체 코드·문서·생성 이미지는 별도 허락이 없는 한 저작권자가 권리를
+  보유합니다.
+- 오픈소스 구성요소는 각 구성요소의 라이선스를 따릅니다.
+- `HWP`, `HWPX` 명칭과 형식은 한글과컴퓨터와 관련될 수 있으며, 이 프로젝트는
+  한글과컴퓨터가 제작·보증·후원한 제품이 아닙니다.
 
-## Workspace Auth Headers
+자세한 내용은 [법적·라이선스 검토](docs/LEGAL_REVIEW.md),
+[제3자 고지](THIRD_PARTY_NOTICES.md), [프로젝트 라이선스](LICENSE)를 확인하세요.
 
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
+## 시리즈
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
-```
-
-## Optional Dispatch-Owned ChatGPT Sign-In
-
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build both series and verify the rendered HTML
-- `npm run desktop:dir`: create an unpacked Windows app for development checks
-- `npm run desktop:build`: create the portable Windows EXE
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+- `/`: 공공AX 로컬 시리즈 1 업무공간
+- `/series2`: 공공AX 로컬 시리즈 2 - 문서 검수
+- `/series3`: 공공AX 로컬 시리즈 - 인수인계

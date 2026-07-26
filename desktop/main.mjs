@@ -195,7 +195,7 @@ function createMainWindow(origin) {
   window.on("closed", () => {
     mainWindow = null;
   });
-  void window.loadURL(origin);
+  void window.loadURL(`${origin}/series2`);
   return window;
 }
 
