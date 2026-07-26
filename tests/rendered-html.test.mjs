@@ -64,12 +64,13 @@ test("server-renders the filename-only handover mapper", async () => {
   const html = await response.text();
   assert.match(
     html,
-    /<title>업무이어봄 \| 공공 AX 로컬 시리즈 3<\/title>/i,
+    /<title>공공 AX 로컬 시리즈 - 인수인계<\/title>/i,
   );
-  assert.match(html, /폴더와 파일명만으로/);
+  assert.match(html, /파일 탐색/);
+  assert.match(html, /파일명에서 추출한 제목 후보/);
   assert.match(html, /인수인계 폴더 선택/);
   assert.match(html, /파일 내용은 읽지 않습니다/);
-  assert.match(html, /외부 전송 없음/);
+  assert.match(html, /인터넷·기관 외부 전송 없음/);
   assert.match(html, /재난업무 예시로 체험/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

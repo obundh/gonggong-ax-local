@@ -28,6 +28,17 @@ test("groups a plan and result into one recurring disaster drill branch", () => 
   assert.equal(analysis.branches[0].mode, "PERIODIC");
   assert.equal(analysis.branches[0].statusCode, "TERMINAL_SIGNAL_FOUND");
   assert.deepEqual(analysis.branches[0].periods, ["2025"]);
+  assert.equal(analysis.branches[0].files[0].analysisTitle, "안전한국훈련");
+  assert.equal(analysis.branches[0].files[1].analysisTitle, "안전한국훈련");
+});
+
+test("keeps an explicit filename-derived title for the preview pane", () => {
+  const analysis = analyzeFilenameInventory([
+    item("인수인계/재난대응훈련/2026_재난대응훈련_시행계획_초안.hwpx"),
+  ]);
+
+  assert.equal(analysis.rootName, "인수인계");
+  assert.equal(analysis.branches[0].files[0].analysisTitle, "재난대응훈련");
 });
 
 test("does not treat templates or planned completion as completed work", () => {
