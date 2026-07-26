@@ -416,6 +416,13 @@ export default function SeriesTwoPage() {
     setCurrentPage(document.paragraphPages[finding.paragraphIndex] ?? 0);
     setPreviewView("compare");
     setSelectedId(finding.id);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.document
+          .getElementById(`compare-row-${finding.paragraphIndex}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
   };
 
   const applyOne = (finding: Finding) => {
@@ -585,9 +592,20 @@ export default function SeriesTwoPage() {
             selectedFinding?.id === finding.id ? styles.selectedHighlight : ""
           }`}
           onClick={() => chooseFinding(finding)}
-          aria-label={`${finding.category} 검사 항목: ${finding.original}`}
+          aria-label={`${finding.category} 검사 항목: ${finding.original}, 제안: ${
+            finding.replacement ?? "문맥 확인"
+          }. ${finding.reason}`}
         >
           {paragraph.slice(finding.start, finding.end)}
+          <span className={styles.highlightTooltip} aria-hidden="true">
+            <b>{finding.category}</b>
+            <span>
+              <del>{finding.original}</del>
+              <i>→</i>
+              <strong>{finding.replacement ?? "문맥 확인"}</strong>
+            </span>
+            <small>{finding.reason}</small>
+          </span>
         </button>,
       );
       cursor = finding.end;
@@ -1040,6 +1058,7 @@ export default function SeriesTwoPage() {
 
                     return (
                       <article
+                        id={`compare-row-${paragraphIndex}`}
                         className={`${styles.compareRow} ${
                           changed ? styles.changedCompareRow : styles.unchangedCompareRow
                         } ${isSelected ? styles.selectedCompareRow : ""}`}
@@ -1148,10 +1167,25 @@ export default function SeriesTwoPage() {
                           width: `${highlight.width}%`,
                           height: `${highlight.height}%`,
                         }}
-                        title={`${highlight.finding.category}: ${highlight.finding.original}`}
-                        aria-label={`${highlight.finding.category} 검사 위치: ${highlight.finding.original}`}
+                        aria-label={`${highlight.finding.category} 검사 위치: ${
+                          highlight.finding.original
+                        }, 제안: ${
+                          highlight.finding.replacement ?? "문맥 확인"
+                        }. ${highlight.finding.reason}`}
                         onClick={() => chooseFinding(highlight.finding)}
-                      />
+                      >
+                        <span className={styles.highlightTooltip} aria-hidden="true">
+                          <b>{highlight.finding.category}</b>
+                          <span>
+                            <del>{highlight.finding.original}</del>
+                            <i>→</i>
+                            <strong>
+                              {highlight.finding.replacement ?? "문맥 확인"}
+                            </strong>
+                          </span>
+                          <small>{highlight.finding.reason}</small>
+                        </span>
+                      </button>
                     ))}
                   </div>
                 </article>
@@ -1242,11 +1276,7 @@ export default function SeriesTwoPage() {
                       }
                     }}
                     onChange={() => {
-                      setActiveCategories(
-                        allCategoriesSelected
-                          ? new Set()
-                          : new Set(findingCategories),
-                      );
+                      setActiveCategories(new Set(findingCategories));
                       setSelectedId(null);
                     }}
                   />
@@ -1268,6 +1298,11 @@ export default function SeriesTwoPage() {
                         checked={isChecked}
                         onChange={() => {
                           setActiveCategories((current) => {
+                            if (
+                              findingCategories.every((item) => current.has(item))
+                            ) {
+                              return new Set([category]);
+                            }
                             const next = new Set(current);
                             if (next.has(category)) next.delete(category);
                             else next.add(category);
@@ -1285,7 +1320,8 @@ export default function SeriesTwoPage() {
                 })}
               </fieldset>
               <p className={styles.filterHelp}>
-                체크한 범주만 원문 형광펜·전후 비교·결과 목록에 표시됩니다.
+                전체 상태에서 범주 하나를 누르면 그 항목만 표시합니다. 이후에는
+                여러 범주를 함께 선택할 수 있습니다.
               </p>
             </div>
 

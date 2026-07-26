@@ -6,6 +6,20 @@
 - `/series2`: 공공 AX 로컬 시리즈 2 `문서살림`
 - `/series3`: `공공 AX 로컬 시리즈 - 인수인계`
 
+## Windows 로컬 실행파일
+
+배포 서버 없이 한 PC에서 세 시리즈를 함께 실행하는 포터블 EXE를 지원합니다.
+설치 과정은 없으며 실행 시 PC 내부의 임시 로컬 주소만 사용합니다.
+
+```bash
+npm run desktop:build
+```
+
+결과물은 `release/Public-AX-Local-0.1.0-win-x64.exe`에 생성됩니다. HWP 파서
+WASM과 화면 자산이 실행파일에 포함되며 문서 내용은 외부 서버로 전송하지
+않습니다. 시리즈 1·3의 선택적 Ollama 기능은 이 PC의
+`127.0.0.1:11434`만 호출합니다.
+
 ## 시리즈 2 · 문서살림
 
 HWP 5.0, HWPX, DOCX, UTF-8 TXT의 본문을 브라우저 메모리에서 읽어 맞춤법,
@@ -13,7 +27,8 @@ HWP 5.0, HWPX, DOCX, UTF-8 TXT의 본문을 브라우저 메모리에서 읽어 
 
 - HWP/HWPX는 글꼴·표·그림·쪽 배치를 페이지 SVG로 로컬 재현
 - 쪽별 원문 미리보기와 현재 쪽 검사 결과를 나란히 표시
-- 원문 오류 위치를 범주별 형광펜으로 표시하고 체크박스로 복수 선택
+- 원문 오류 위치를 범주별 형광펜으로 표시하고 마우스를 올리면 제안 말풍선 표시
+- 전체 상태에서 범주 하나를 누르면 해당 범주만, 이후에는 여러 범주를 복수 선택
 - 최초 원문과 적용된 수정·남은 제안을 줄별 전후 비교로 확인
 - 국립국어원 공공언어 용어 1,331개를 빌드에 포함
 - 높은 확신도의 기계적 오류만 `안전 수정`으로 일괄 적용
@@ -134,6 +149,8 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 - `npm run dev`: start local development
 - `npm run build`: verify the vinext build output
 - `npm test`: build both series and verify the rendered HTML
+- `npm run desktop:dir`: create an unpacked Windows app for development checks
+- `npm run desktop:build`: create the portable Windows EXE
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More

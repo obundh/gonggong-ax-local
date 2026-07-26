@@ -849,7 +849,7 @@
   position: relative;
   width: min(100%, 920px);
   margin: 0 auto;
-  overflow: hidden;
+  overflow: visible;
   background: #fff;
   box-shadow:
     0 2px 4px rgba(29, 35, 38, 0.15),
@@ -886,7 +886,6 @@
       transparent 91%
     );
   padding: 0;
-  mix-blend-mode: multiply;
   pointer-events: auto;
   cursor: pointer;
   transform: rotate(-0.18deg) scaleY(1.12);
@@ -894,11 +893,112 @@
 }
 
 .originalHighlight:hover,
+.originalHighlight:focus-visible,
 .originalHighlight.selectedOriginalHighlight {
-  z-index: 3;
+  z-index: 5;
   outline: 2px solid rgba(42, 55, 63, 0.7);
   outline-offset: 1px;
   filter: saturate(1.25);
+}
+
+.highlightTooltip {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  z-index: 10;
+  display: grid;
+  width: max-content;
+  min-width: 180px;
+  max-width: min(320px, 56vw);
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9px;
+  background: #263740;
+  box-shadow: 0 9px 24px rgba(20, 28, 32, 0.28);
+  padding: 9px 11px;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 5px) scaleY(0.89) rotate(0.18deg);
+  transform-origin: center bottom;
+  visibility: hidden;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 120ms ease;
+}
+
+.highlightTooltip::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: #263740;
+  content: "";
+  transform: translate(-50%, -5px) rotate(45deg);
+}
+
+.originalHighlight:hover .highlightTooltip,
+.originalHighlight:focus-visible .highlightTooltip,
+.originalHighlight.selectedOriginalHighlight .highlightTooltip,
+.highlight:hover .highlightTooltip,
+.highlight:focus-visible .highlightTooltip,
+.highlight.selectedHighlight .highlightTooltip {
+  opacity: 1;
+  transform: translate(-50%, 0) scaleY(0.89) rotate(0.18deg);
+  visibility: visible;
+}
+
+.highlight .highlightTooltip {
+  transform: translate(-50%, 5px);
+}
+
+.highlight:hover .highlightTooltip,
+.highlight:focus-visible .highlightTooltip,
+.highlight.selectedHighlight .highlightTooltip {
+  transform: translate(-50%, 0);
+}
+
+.highlightTooltip > b {
+  color: #ffd977;
+  font-size: 9px;
+}
+
+.highlightTooltip > span {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.highlightTooltip del,
+.highlightTooltip strong {
+  overflow-wrap: anywhere;
+}
+
+.highlightTooltip del {
+  color: #ffb4a7;
+}
+
+.highlightTooltip i {
+  flex: 0 0 auto;
+  color: #a7b8c1;
+  font-style: normal;
+}
+
+.highlightTooltip strong {
+  color: #aee5d7;
+}
+
+.highlightTooltip small {
+  color: #d7e0e4;
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .originalHighlight.highlight맞춤법 {
@@ -1079,8 +1179,10 @@
 }
 
 .compareRow.selectedCompareRow {
-  border-color: #7f9f9a;
-  box-shadow: 0 0 0 3px rgba(40, 119, 111, 0.11);
+  border-color: #b8402b;
+  box-shadow:
+    0 0 0 4px rgba(184, 64, 43, 0.19),
+    0 9px 24px rgba(79, 29, 20, 0.14);
 }
 
 .compareLineMeta {
@@ -1106,6 +1208,20 @@
 
 .changedCompareRow .compareLineMeta strong {
   color: var(--rust);
+}
+
+.compareRow.changedCompareRow {
+  border: 2px solid #cf604c;
+  box-shadow:
+    0 0 0 2px rgba(207, 96, 76, 0.09),
+    0 8px 22px rgba(93, 47, 37, 0.1);
+}
+
+.compareRow.changedCompareRow.selectedCompareRow {
+  border-color: #a72d1d;
+  box-shadow:
+    0 0 0 4px rgba(184, 64, 43, 0.22),
+    0 10px 26px rgba(79, 29, 20, 0.16);
 }
 
 .beforePane,
@@ -1330,7 +1446,9 @@
 }
 
 .highlight:hover,
+.highlight:focus-visible,
 .selectedHighlight {
+  z-index: 5;
   background: rgba(185, 95, 66, 0.2);
   box-shadow: 0 0 0 3px rgba(185, 95, 66, 0.08);
 }
