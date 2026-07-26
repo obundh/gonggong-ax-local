@@ -150,6 +150,50 @@
   opacity: 0.75;
 }
 
+.sampleActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.sampleActions button,
+.sampleActions a {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #dbe3e7;
+  font-size: 8px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sampleActions button:hover,
+.sampleActions a:hover {
+  border-color: rgba(243, 164, 133, 0.6);
+  background: rgba(185, 95, 66, 0.14);
+  color: #fff;
+}
+
+.sampleActions button span {
+  border-radius: 4px;
+  background: var(--rust);
+  padding: 2px 4px;
+  color: #fff;
+  font-size: 7px;
+}
+
+.sampleActions a {
+  padding: 0 8px;
+  color: #f0b39b;
+}
+
 .uploadIcon {
   display: grid;
   width: 34px;
@@ -650,6 +694,17 @@
   border-color: #aaa399;
 }
 
+.paperToolbar button.spellingSampleButton {
+  border-color: #d99179;
+  background: #fff5f0;
+  color: #a84831;
+}
+
+.paperToolbar button.spellingSampleButton:hover {
+  border-color: var(--rust);
+  background: #fbe7de;
+}
+
 .previewMode {
   flex: 0 0 auto;
   border: 1px solid #c9d8d5;
@@ -724,6 +779,126 @@
   font-size: 8px;
   line-height: 1.45;
   text-align: right;
+}
+
+.previewCategoryBar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px 10px;
+  border-bottom: 1px solid #ccd7d4;
+  background: #edf3f1;
+  padding: 8px 10px;
+}
+
+.previewCategoryHeading {
+  display: grid;
+  min-width: 96px;
+  gap: 1px;
+}
+
+.previewCategoryHeading span {
+  color: #78847f;
+  font-size: 7px;
+  font-weight: 750;
+}
+
+.previewCategoryHeading strong {
+  color: var(--navy-deep);
+  font-size: 9px;
+}
+
+.previewCategoryButtons {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+}
+
+.previewCategoryButtons button {
+  display: inline-flex;
+  height: 29px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #cbd5d2;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0 8px;
+  color: #5e6966;
+  font-size: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.previewCategoryButtons button:hover {
+  border-color: #8aa59f;
+  background: #fff;
+}
+
+.previewCategoryButtons button.activePreviewCategory {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 2px 7px rgba(34, 46, 54, 0.15);
+}
+
+.previewCategoryButtons button > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.previewCategoryButtons button i {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: #9da9a6;
+}
+
+.previewCategoryButtons button[data-category="맞춤법"] i {
+  background: #e16c58;
+}
+
+.previewCategoryButtons button[data-category="띄어쓰기"] i {
+  background: #3eb68f;
+}
+
+.previewCategoryButtons button[data-category="공공언어"] i {
+  background: #d5a421;
+}
+
+.previewCategoryButtons button[data-category="문장"] i {
+  background: #9b6bc1;
+}
+
+.previewCategoryButtons button[data-category="표기"] i {
+  background: #4c9bd2;
+}
+
+.previewCategoryButtons button b {
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  border-radius: 999px;
+  background: #e3eae8;
+  color: #53615e;
+  font-size: 7px;
+}
+
+.previewCategoryButtons button.activePreviewCategory b {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.previewCategoryBar > small {
+  grid-column: 2;
+  color: #7f8b87;
+  font-size: 7px;
 }
 
 .pageNavigator {
@@ -2137,6 +2312,20 @@
 
   .previewViewBar > p {
     text-align: left;
+  }
+
+  .previewCategoryBar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .previewCategoryHeading {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .previewCategoryBar > small {
+    grid-column: 1;
   }
 
   .compareSummary {

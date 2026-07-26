@@ -33,6 +33,20 @@ const sampleParagraphs = [
   "추후 확정",
 ];
 
+const subtleSpellingSampleParagraphs = [
+  "주민 안내문 맞춤법 검토 예시",
+  "검토 과정에서 행사 일정이 확정됬습니다.",
+  "접수 마감까지 몇일 남지 않았으므로 담당자에게 알려 주십시오.",
+  "제출된 자료는 항목별로 정리되여 검토자에게 전달됩니다.",
+  "신청 방법을 어떻해 설명할지 다시 확인해 주십시오.",
+  "웬지 안내 문구가 낯설게 느껴져 표현을 다시 살펴보았습니다.",
+  "회의 시간이 금새 변경될 수 있으니 게시판을 확인하십시오.",
+  "새로운 주민 참여 행사를 앞두고 설레임이 커지고 있습니다.",
+  "검토 결과에서 희안한 항목이 발견되면 담당 부서에 문의하십시오.",
+  "왠만하면 모든 신청서를 같은 기준으로 검토해 주십시오.",
+  "수정한 내용은 일일히 대조한 뒤 최종본에 반영하십시오.",
+];
+
 const findingCategories: FindingCategory[] = [
   "맞춤법",
   "띄어쓰기",
@@ -267,6 +281,13 @@ export default function SeriesTwoPage() {
     activeCategories.has(category),
   );
   const someCategoriesSelected = activeCategories.size > 0;
+  const activeCategorySummary = allCategoriesSelected
+    ? "전체 분류 표시"
+    : activeCategories.size === 0
+      ? "표시 항목 없음"
+      : activeCategories.size === 1
+        ? `${findingCategories.find((category) => activeCategories.has(category))}만 표시`
+        : `${activeCategories.size}개 분류 표시`;
 
   const findingsByPage = useMemo(() => {
     const result = Array.from({ length: document.pages.length }, () => 0);
@@ -381,6 +402,23 @@ export default function SeriesTwoPage() {
     setBaselineCount(nextFindings.length);
     setDraftText(nextDocument.paragraphs.join("\n"));
     setIsEditing(false);
+  };
+
+  const openSubtleSpellingSample = () => {
+    const nextDocument = createFlowDocument({
+      name: "맞춤법_미묘한_오류_예시.txt",
+      format: "TXT",
+      paragraphs: subtleSpellingSampleParagraphs,
+      bytes: new Blob([subtleSpellingSampleParagraphs.join("\n")]).size,
+    });
+    const spellingCount = analyzeParagraphs(nextDocument.paragraphs).filter(
+      (finding) => finding.category === "맞춤법",
+    ).length;
+    resetForDocument(nextDocument);
+    setActiveCategories(new Set(["맞춤법"]));
+    setNotice(
+      `미묘한 맞춤법 오류 ${spellingCount}건이 담긴 예시를 열었습니다. 미리보기에는 맞춤법만 표시합니다.`,
+    );
   };
 
   const loadFile = async (file: File | undefined) => {
@@ -712,6 +750,19 @@ export default function SeriesTwoPage() {
             accept=".hwpx,.docx,.txt,.hwp"
             onChange={(event) => void loadFile(event.target.files?.[0])}
           />
+          <div className={styles.sampleActions}>
+            <button type="button" onClick={openSubtleSpellingSample}>
+              <span>예시</span>
+              미묘한 맞춤법 10건 열기
+            </button>
+            <a
+              href="/samples/맞춤법_미묘한_오류_예시.txt"
+              download
+              title="맞춤법 오류 예시 TXT 내려받기"
+            >
+              TXT ↓
+            </a>
+          </div>
         </section>
 
         <section className={styles.documentCard}>
@@ -853,6 +904,13 @@ export default function SeriesTwoPage() {
               </div>
               <div>
                 <span>{characterCount.toLocaleString()}자</span>
+                <button
+                  type="button"
+                  className={styles.spellingSampleButton}
+                  onClick={openSubtleSpellingSample}
+                >
+                  맞춤법 예시
+                </button>
                 <button type="button" onClick={downloadText}>
                   수정본 TXT
                 </button>
@@ -894,6 +952,62 @@ export default function SeriesTwoPage() {
                     ? "실제 문서 배치와 서식을 확인합니다."
                     : "원본과 적용된 수정·남은 제안을 한 줄씩 맞춰 봅니다."}
                 </p>
+              </div>
+            )}
+
+            {!isEditing && (
+              <div className={styles.previewCategoryBar}>
+                <div className={styles.previewCategoryHeading}>
+                  <span>미리보기 분류</span>
+                  <strong>{activeCategorySummary}</strong>
+                </div>
+                <div
+                  className={styles.previewCategoryButtons}
+                  role="group"
+                  aria-label="미리보기에 표시할 검사 분류"
+                >
+                  <button
+                    type="button"
+                    className={
+                      allCategoriesSelected ? styles.activePreviewCategory : ""
+                    }
+                    aria-pressed={allCategoriesSelected}
+                    onClick={() => {
+                      setActiveCategories(new Set(findingCategories));
+                      setSelectedId(null);
+                    }}
+                  >
+                    <span>전체</span>
+                    <b>{currentPageFindings.length}</b>
+                  </button>
+                  {findingCategories.map((category) => {
+                    const isActive =
+                      !allCategoriesSelected && activeCategories.has(category);
+                    return (
+                      <button
+                        type="button"
+                        key={`preview-category-${category}`}
+                        data-category={category}
+                        className={
+                          isActive ? styles.activePreviewCategory : ""
+                        }
+                        aria-pressed={isActive}
+                        onClick={() => {
+                          setActiveCategories(new Set([category]));
+                          setSelectedId(null);
+                        }}
+                        title={`${category}만 미리보기`}
+                      >
+                        <span>
+                          <i aria-hidden="true" />
+                          {category}
+                        </span>
+                        <b>{counts[category]}</b>
+                      </button>
+                    );
+                  })}
+                </div>
+                <small>분류를 누르면 해당 항목만 원문과 전후 비교에 남습니다.</small>
               </div>
             )}
 
