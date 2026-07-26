@@ -76,9 +76,6 @@ const suggestions = [
   },
 ];
 
-const firstAssistantMessage =
-  "좋습니다. 현재 업무공간에 등록된 자료를 우선 확인한 뒤, 근거가 확인되는 내용과 검토가 필요한 내용을 구분해 작성하겠습니다.\n\n초안은 ① 검토 배경 ② 주요 내용 ③ 쟁점 및 검토의견 ④ 향후 조치 순으로 구성하겠습니다.";
-
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -106,29 +103,94 @@ export default function Home() {
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const submitPrompt = (prompt: string) => {
+  const submitPrompt = async (prompt: string) => {
     const clean = prompt.trim();
     if (!clean || isThinking) return;
 
+    const userMessage: Message = {
+      id: Date.now(),
+      role: "user",
+      text: clean,
+    };
+    const conversation = [...messages, userMessage];
+
     setMessages((current) => [
       ...current,
-      { id: Date.now(), role: "user", text: clean },
+      userMessage,
     ]);
     setInput("");
     setIsThinking(true);
 
-    window.setTimeout(() => {
+    try {
+      const response = await fetch("http://127.0.0.1:11434/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: activeModel.id,
+          messages: [
+            {
+              role: "system",
+              content:
+                "당신은 공공업무를 지원하는 로컬 AI입니다. 정확하고 명확한 한국어로 답하고, 확실하지 않은 내용은 추측하지 말고 확인이 필요하다고 밝혀주세요.",
+            },
+            ...conversation.map((message) => ({
+              role: message.role,
+              content: message.text,
+            })),
+          ],
+          stream: false,
+          think: false,
+          options: {
+            num_ctx: 4096,
+          },
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        message?: {
+          content?: string;
+        };
+      };
+
+      if (!response.ok || payload.error) {
+        throw new Error(payload.error || `Ollama 요청 실패 (${response.status})`);
+      }
+
+      const answer = payload.message?.content?.trim();
+      if (!answer) {
+        throw new Error("모델이 빈 응답을 반환했습니다.");
+      }
+
       setMessages((current) => [
         ...current,
         {
           id: Date.now() + 1,
           role: "assistant",
-          text: firstAssistantMessage,
-          sources: ["2026년 업무계획.pdf · 3쪽", "검토보고서 서식.hwpx"],
+          text: answer,
         },
       ]);
+    } catch (error) {
+      const detail =
+        error instanceof Error ? error.message : "알 수 없는 연결 오류";
+      const localHint =
+        window.location.protocol === "https:"
+          ? "배포된 HTTPS 화면에서는 PC의 Ollama 연결이 차단될 수 있습니다. localhost 화면에서 다시 시도해주세요."
+          : "Ollama가 실행 중인지, 선택한 모델이 설치돼 있는지 확인해주세요.";
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          text: `로컬 모델과 대화하지 못했습니다.\n\n${detail}\n${localHint}`,
+        },
+      ]);
+    } finally {
       setIsThinking(false);
-    }, 650);
+    }
   };
 
   const handleSubmit = (event: FormEvent) => {
@@ -436,7 +498,7 @@ export default function Home() {
               {isThinking && (
                 <article className="message assistant thinking">
                   <div className="message-avatar ai">◆</div>
-                  <div className="thinking-bubble"><span /><span /><span /> 자료를 확인하고 있습니다</div>
+                  <div className="thinking-bubble"><span /><span /><span /> {activeModel.label}가 응답을 생성하고 있습니다</div>
                 </article>
               )}
             </section>
