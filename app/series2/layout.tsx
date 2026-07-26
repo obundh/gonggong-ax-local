@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "문서살림 | 공공 AX 로컬 시리즈 2",
     description:
-      "HWPX, DOCX, TXT를 외부로 보내지 않고 맞춤법·띄어쓰기·공공언어 규칙으로 검사합니다.",
+      "HWP, HWPX, DOCX, TXT를 외부로 보내지 않고 페이지별로 미리 보고 맞춤법·띄어쓰기·공공언어 규칙으로 검사합니다.",
     applicationName: "공공 AX 로컬 시리즈 2 · 문서살림",
     alternates: {
       canonical: `${origin}/series2`,

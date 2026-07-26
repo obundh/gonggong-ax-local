@@ -40,6 +40,35 @@
 > FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 > DEALINGS IN THE SOFTWARE.
 
+## rhwp
+
+- 프로젝트: <https://github.com/edwardkim/rhwp>
+- 라이선스: MIT
+- 사용 목적: 브라우저 안에서 구형 HWP 5.0과 HWPX를 해석하고 페이지 SVG로 조판
+
+> Copyright (c) 2025-2026 Edward Kim
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+HWP와 HWPX는 한글과컴퓨터의 등록 상표입니다. 이 프로젝트와 rhwp는
+한글과컴퓨터와 독립적으로 개발된 오픈 소스 소프트웨어입니다.
+
 ## 내장 맞춤법 규칙
 
 `app/series2/rule-engine.ts`의 맞춤법·띄어쓰기·문서 표기 패턴은 국립국어원

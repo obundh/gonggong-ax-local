@@ -3,12 +3,17 @@
 import {
   DragEvent,
   Fragment,
+  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import Link from "next/link";
-import { parseDocument, ParsedDocument } from "./document-parser";
+import {
+  createFlowDocument,
+  parseDocument,
+  ParsedDocument,
+} from "./document-parser";
 import {
   analyzeParagraphs,
   Finding,
@@ -42,12 +47,12 @@ type HistoryItem = Finding & {
   chosenReplacement: string | null;
 };
 
-const initialSample: ParsedDocument = {
+const initialSample: ParsedDocument = createFlowDocument({
   name: "공공시설_안내_가이드.hwpx",
   format: "직접 입력",
   paragraphs: sampleParagraphs,
   bytes: new Blob([sampleParagraphs.join("\n")]).size,
-};
+});
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -75,8 +80,22 @@ function baseName(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "");
 }
 
+function visiblePageNumbers(pageCount: number, currentPage: number) {
+  if (pageCount <= 9) return Array.from({ length: pageCount }, (_, index) => index);
+  const indexes = new Set([0, pageCount - 1]);
+  for (
+    let index = Math.max(0, currentPage - 3);
+    index <= Math.min(pageCount - 1, currentPage + 3);
+    index += 1
+  ) {
+    indexes.add(index);
+  }
+  return [...indexes].sort((left, right) => left - right);
+}
+
 export default function SeriesTwoPage() {
   const [document, setDocument] = useState<ParsedDocument>(initialSample);
+  const [currentPage, setCurrentPage] = useState(0);
   const [ignoredIds, setIgnoredIds] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [filter, setFilter] = useState<"전체" | FindingCategory>("전체");
@@ -101,31 +120,59 @@ export default function SeriesTwoPage() {
     [document.paragraphs, ignoredIds],
   );
 
+  const currentPageFindings = useMemo(
+    () =>
+      findings.filter(
+        (finding) =>
+          (document.paragraphPages[finding.paragraphIndex] ?? 0) === currentPage,
+      ),
+    [currentPage, document.paragraphPages, findings],
+  );
+
   const visibleFindings = useMemo(
     () =>
       filter === "전체"
-        ? findings
-        : findings.filter((finding) => finding.category === filter),
-    [filter, findings],
+        ? currentPageFindings
+        : currentPageFindings.filter((finding) => finding.category === filter),
+    [currentPageFindings, filter],
   );
 
   const selectedFinding =
-    visibleFindings.find((finding) => finding.id === selectedId) ??
-    visibleFindings[0] ??
-    null;
+    visibleFindings.find((finding) => finding.id === selectedId) ?? null;
 
   const counts = useMemo(() => {
     const result: Record<"전체" | FindingCategory, number> = {
-      전체: findings.length,
+      전체: currentPageFindings.length,
       맞춤법: 0,
       띄어쓰기: 0,
       공공언어: 0,
       문장: 0,
       표기: 0,
     };
-    for (const finding of findings) result[finding.category] += 1;
+    for (const finding of currentPageFindings) result[finding.category] += 1;
     return result;
-  }, [findings]);
+  }, [currentPageFindings]);
+
+  const findingsByPage = useMemo(() => {
+    const result = Array.from({ length: document.pages.length }, () => 0);
+    for (const finding of findings) {
+      const pageIndex = document.paragraphPages[finding.paragraphIndex] ?? 0;
+      if (pageIndex >= 0 && pageIndex < result.length) result[pageIndex] += 1;
+    }
+    return result;
+  }, [document.pages.length, document.paragraphPages, findings]);
+
+  const currentPageParagraphIndexes =
+    document.pages[currentPage]?.paragraphIndexes ?? [];
+  const pageNumbers = visiblePageNumbers(document.pages.length, currentPage);
+  const currentSvg = useMemo(() => {
+    if (document.previewKind !== "original-svg" || !document.renderPage) return null;
+    try {
+      return document.renderPage(currentPage);
+    } catch {
+      return null;
+    }
+  }, [currentPage, document]);
 
   const safeCount = findings.filter(
     (finding) => finding.safe && finding.replacement,
@@ -136,15 +183,24 @@ export default function SeriesTwoPage() {
       ? 100
       : Math.min(100, Math.round((processedCount / baselineCount) * 100));
   const characterCount = document.paragraphs.join("\n").length;
+  const disposeDocument = document.dispose;
+
+  useEffect(
+    () => () => {
+      disposeDocument?.();
+    },
+    [disposeDocument],
+  );
 
   const resetForDocument = (nextDocument: ParsedDocument) => {
     const nextFindings = analyzeParagraphs(nextDocument.paragraphs);
     setDocument(nextDocument);
+    setCurrentPage(0);
     setIgnoredIds(new Set());
     setHistory([]);
     setReplacementChoices({});
     setFilter("전체");
-    setSelectedId(nextFindings[0]?.id ?? null);
+    setSelectedId(null);
     setBaselineCount(nextFindings.length);
     setDraftText(nextDocument.paragraphs.join("\n"));
     setIsEditing(false);
@@ -159,7 +215,7 @@ export default function SeriesTwoPage() {
       const parsed = await parseDocument(file);
       resetForDocument(parsed);
       setNotice(
-        `${parsed.name}에서 ${parsed.paragraphs.length.toLocaleString()}개 문단을 읽었습니다. 문서 내용은 외부로 전송되지 않았습니다.`,
+        `${parsed.name}의 ${parsed.pages.length.toLocaleString()}쪽을 로컬에서 읽었습니다. 문서 내용은 외부로 전송되지 않았습니다.`,
       );
     } catch (error) {
       setNotice(
@@ -180,10 +236,8 @@ export default function SeriesTwoPage() {
   };
 
   const chooseFinding = (finding: Finding) => {
+    setCurrentPage(document.paragraphPages[finding.paragraphIndex] ?? 0);
     setSelectedId(finding.id);
-    window.document
-      .getElementById(`paragraph-${finding.paragraphIndex}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const applyOne = (finding: Finding) => {
@@ -267,12 +321,12 @@ export default function SeriesTwoPage() {
 
   const saveDraft = () => {
     const paragraphs = draftText.split(/\r?\n/);
-    const nextDocument: ParsedDocument = {
-      ...document,
+    const nextDocument = createFlowDocument({
+      name: document.name,
       format: "직접 입력",
       paragraphs,
       bytes: new Blob([draftText]).size,
-    };
+    });
     resetForDocument(nextDocument);
     setNotice("직접 편집한 내용을 다시 검사했습니다.");
   };
@@ -290,6 +344,7 @@ export default function SeriesTwoPage() {
     const rows = [
       [
         "상태",
+        "쪽",
         "문단",
         "분류",
         "확신도",
@@ -300,6 +355,7 @@ export default function SeriesTwoPage() {
       ],
       ...history.map((item) => [
         item.status,
+        (document.paragraphPages[item.paragraphIndex] ?? 0) + 1,
         item.paragraphIndex + 1,
         item.category,
         item.confidence,
@@ -310,6 +366,7 @@ export default function SeriesTwoPage() {
       ]),
       ...findings.map((item) => [
         "미처리",
+        (document.paragraphPages[item.paragraphIndex] ?? 0) + 1,
         item.paragraphIndex + 1,
         item.category,
         item.confidence,
@@ -402,7 +459,7 @@ export default function SeriesTwoPage() {
               {isProcessing ? "···" : "＋"}
             </span>
             <strong>{isProcessing ? "문서 읽는 중" : "문서 불러오기"}</strong>
-            <small>HWPX · DOCX · TXT</small>
+            <small>HWP · HWPX · DOCX · TXT</small>
           </button>
           <input
             ref={fileInputRef}
@@ -418,7 +475,8 @@ export default function SeriesTwoPage() {
           <div>
             <strong title={document.name}>{document.name}</strong>
             <small>
-              {document.paragraphs.length.toLocaleString()}개 문단 ·{" "}
+              {document.pages.length.toLocaleString()}쪽 ·{" "}
+              {document.paragraphs.length.toLocaleString()}개 검사 줄 ·{" "}
               {formatBytes(document.bytes)}
             </small>
           </div>
@@ -479,7 +537,7 @@ export default function SeriesTwoPage() {
                 setIsEditing((current) => !current);
               }}
             >
-              {isEditing ? "미리보기" : "직접 편집"}
+              {isEditing ? "원문 보기" : "검수본 편집"}
             </button>
             <button
               type="button"
@@ -543,6 +601,11 @@ export default function SeriesTwoPage() {
               <div>
                 <span className={styles.paperDot} />
                 <strong>{document.name}</strong>
+                <span className={styles.previewMode}>
+                  {document.previewKind === "original-svg"
+                    ? "원문 조판"
+                    : "텍스트 페이지"}
+                </span>
               </div>
               <div>
                 <span>{characterCount.toLocaleString()}자</span>
@@ -554,6 +617,71 @@ export default function SeriesTwoPage() {
                 </button>
               </div>
             </div>
+
+            {!isEditing && (
+              <nav className={styles.pageNavigator} aria-label="원문 페이지 이동">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage((page) => Math.max(0, page - 1));
+                    setSelectedId(null);
+                  }}
+                  disabled={currentPage === 0}
+                  aria-label="이전 페이지"
+                >
+                  ←
+                </button>
+                <div className={styles.pageButtons}>
+                  {pageNumbers.map((pageIndex, listIndex) => (
+                    <Fragment key={pageIndex}>
+                      {listIndex > 0 &&
+                        pageIndex - pageNumbers[listIndex - 1] > 1 && (
+                          <span>…</span>
+                        )}
+                      <button
+                        type="button"
+                        className={
+                          currentPage === pageIndex ? styles.activePage : ""
+                        }
+                        onClick={() => {
+                          setCurrentPage(pageIndex);
+                          setSelectedId(null);
+                        }}
+                        aria-current={
+                          currentPage === pageIndex ? "page" : undefined
+                        }
+                        aria-label={`${pageIndex + 1}쪽${
+                          findingsByPage[pageIndex]
+                            ? `, 검사 항목 ${findingsByPage[pageIndex]}건`
+                            : ""
+                        }`}
+                      >
+                        {pageIndex + 1}
+                        {findingsByPage[pageIndex] > 0 && (
+                          <i aria-hidden="true">{findingsByPage[pageIndex]}</i>
+                        )}
+                      </button>
+                    </Fragment>
+                  ))}
+                </div>
+                <span className={styles.pagePosition}>
+                  <strong>{currentPage + 1}</strong> / {document.pages.length}쪽
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage((page) =>
+                      Math.min(document.pages.length - 1, page + 1),
+                    );
+                    setSelectedId(null);
+                  }}
+                  disabled={currentPage >= document.pages.length - 1}
+                  aria-label="다음 페이지"
+                >
+                  →
+                </button>
+              </nav>
+            )}
 
             {isEditing ? (
               <div className={styles.editArea}>
@@ -570,18 +698,44 @@ export default function SeriesTwoPage() {
                   </button>
                 </div>
               </div>
+            ) : currentSvg ? (
+              <div className={styles.originalPreview}>
+                <div className={styles.originalNotice}>
+                  <span aria-hidden="true">▣</span>
+                  <p>
+                    <strong>원문 {currentPage + 1}쪽</strong>
+                    글꼴·표·그림·쪽 배치를 로컬에서 재현합니다. 수정 제안은 오른쪽
+                    검사 결과와 검수본에만 반영되어 원본은 바뀌지 않습니다.
+                  </p>
+                </div>
+                <article
+                  className={styles.originalSheet}
+                  aria-label={`원문 ${currentPage + 1}쪽 미리보기`}
+                  dangerouslySetInnerHTML={{ __html: currentSvg }}
+                />
+              </div>
             ) : (
               <article className={styles.paper} aria-label="검사 문서 미리보기">
-                {document.paragraphs.map((paragraph, paragraphIndex) => (
-                  <div
-                    className={styles.paragraphRow}
-                    id={`paragraph-${paragraphIndex}`}
-                    key={`${paragraphIndex}-${paragraph.slice(0, 12)}`}
-                  >
-                    <span>{String(paragraphIndex + 1).padStart(2, "0")}</span>
-                    <p>{renderParagraph(paragraph, paragraphIndex)}</p>
-                  </div>
-                ))}
+                <div className={styles.flowPageLabel}>
+                  <span>{currentPage + 1}쪽</span>
+                  <p>
+                    이 형식은 원문 조판 정보가 없어 읽기 편한 페이지로 나누어
+                    표시합니다.
+                  </p>
+                </div>
+                {currentPageParagraphIndexes.map((paragraphIndex) => {
+                  const paragraph = document.paragraphs[paragraphIndex];
+                  return (
+                    <div
+                      className={styles.paragraphRow}
+                      id={`paragraph-${paragraphIndex}`}
+                      key={`${paragraphIndex}-${paragraph.slice(0, 12)}`}
+                    >
+                      <span>{String(paragraphIndex + 1).padStart(2, "0")}</span>
+                      <p>{renderParagraph(paragraph, paragraphIndex)}</p>
+                    </div>
+                  );
+                })}
               </article>
             )}
           </section>
@@ -589,8 +743,40 @@ export default function SeriesTwoPage() {
           <aside className={styles.findingsPanel}>
             <div className={styles.findingsHeader}>
               <div>
-                <p>검사 결과</p>
-                <strong>{visibleFindings.length.toLocaleString()}건</strong>
+                <p>
+                  <strong>{currentPage + 1}쪽</strong> 검사 결과
+                </p>
+                <span>
+                  이 쪽 {visibleFindings.length.toLocaleString()}건 · 문서 전체{" "}
+                  {findings.length.toLocaleString()}건
+                </span>
+              </div>
+              <div className={styles.resultPageNav}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage((page) => Math.max(0, page - 1));
+                    setSelectedId(null);
+                  }}
+                  disabled={currentPage === 0}
+                >
+                  ← 이전 쪽
+                </button>
+                <span>
+                  {currentPage + 1} / {document.pages.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage((page) =>
+                      Math.min(document.pages.length - 1, page + 1),
+                    );
+                    setSelectedId(null);
+                  }}
+                  disabled={currentPage >= document.pages.length - 1}
+                >
+                  다음 쪽 →
+                </button>
               </div>
               <div className={styles.filterRow}>
                 {categoryFilters.map((category) => (
@@ -616,12 +802,11 @@ export default function SeriesTwoPage() {
               {visibleFindings.length === 0 ? (
                 <div className={styles.emptyState}>
                   <span>✓</span>
-                  <strong>이 범주의 남은 항목이 없습니다</strong>
-                  <p>다른 범주를 확인하거나 수정본을 내려받으세요.</p>
+                  <strong>{currentPage + 1}쪽의 남은 항목이 없습니다</strong>
+                  <p>다른 쪽으로 이동하거나 다른 범주를 확인하세요.</p>
                 </div>
               ) : (
-                <>
-                  {visibleFindings.slice(0, 200).map((finding) => (
+                visibleFindings.map((finding) => (
                     <article
                       key={finding.id}
                       className={`${styles.findingCard} ${
@@ -646,7 +831,8 @@ export default function SeriesTwoPage() {
                             {finding.category}
                           </b>
                           <small>{finding.confidence} 확신</small>
-                          <small>{finding.paragraphIndex + 1}문단</small>
+                          <small>{currentPage + 1}쪽</small>
+                          <small>{finding.paragraphIndex + 1}번째 검사 줄</small>
                         </span>
                         <span className={styles.changeRow}>
                           <del>{finding.original}</del>
@@ -711,14 +897,7 @@ export default function SeriesTwoPage() {
                         </div>
                       )}
                     </article>
-                  ))}
-                  {visibleFindings.length > 200 && (
-                    <p className={styles.resultLimit}>
-                      성능을 위해 앞의 200건만 표시합니다. 수정하면 다음 항목이
-                      이어서 나타납니다.
-                    </p>
-                  )}
-                </>
+                  ))
               )}
             </div>
 

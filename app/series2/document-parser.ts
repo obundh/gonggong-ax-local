@@ -2,12 +2,39 @@
 
 import JSZip from "jszip";
 
+export type ParsedPage = {
+  number: number;
+  paragraphIndexes: number[];
+  width?: number;
+  height?: number;
+};
+
 export type ParsedDocument = {
   name: string;
-  format: "TXT" | "DOCX" | "HWPX" | "직접 입력";
+  format: "TXT" | "DOCX" | "HWP" | "HWPX" | "직접 입력";
   paragraphs: string[];
+  paragraphPages: number[];
+  pages: ParsedPage[];
   bytes: number;
+  previewKind: "original-svg" | "flow";
+  renderPage?: (pageIndex: number) => string;
+  dispose?: () => void;
 };
+
+type RhwpTextRun = {
+  text?: string;
+  x?: number;
+  y?: number;
+};
+
+type RhwpPageInfo = {
+  width?: number;
+  height?: number;
+};
+
+const FLOW_PAGE_CHARACTER_LIMIT = 1_700;
+let rhwpModulePromise: Promise<typeof import("@rhwp/core")> | null = null;
+let measureCanvas: HTMLCanvasElement | null = null;
 
 function ensureValidXml(xml: string, fileLabel: string) {
   const document = new DOMParser().parseFromString(xml, "application/xml");
@@ -37,6 +64,214 @@ function paragraphTexts(document: XMLDocument) {
     .filter((paragraph) => paragraph.trim().length > 0);
 }
 
+export function createFlowDocument(
+  input: Pick<ParsedDocument, "name" | "format" | "paragraphs" | "bytes">,
+): ParsedDocument {
+  const pages: ParsedPage[] = [];
+  const paragraphPages: number[] = [];
+  let currentPage: ParsedPage = { number: 1, paragraphIndexes: [] };
+  let currentCharacterCount = 0;
+
+  for (let paragraphIndex = 0; paragraphIndex < input.paragraphs.length; paragraphIndex += 1) {
+    const paragraph = input.paragraphs[paragraphIndex];
+    const nextSize = Math.max(1, paragraph.length) + 1;
+    if (
+      currentPage.paragraphIndexes.length > 0 &&
+      currentCharacterCount + nextSize > FLOW_PAGE_CHARACTER_LIMIT
+    ) {
+      pages.push(currentPage);
+      currentPage = { number: pages.length + 1, paragraphIndexes: [] };
+      currentCharacterCount = 0;
+    }
+    currentPage.paragraphIndexes.push(paragraphIndex);
+    paragraphPages[paragraphIndex] = currentPage.number - 1;
+    currentCharacterCount += nextSize;
+  }
+
+  if (currentPage.paragraphIndexes.length > 0 || pages.length === 0) {
+    pages.push(currentPage);
+  }
+
+  return {
+    ...input,
+    paragraphPages,
+    pages,
+    previewKind: "flow",
+  };
+}
+
+function installLocalTextMeasurement() {
+  const globalScope = globalThis as typeof globalThis & {
+    measureTextWidth?: (font: string, text: string) => number;
+  };
+  if (globalScope.measureTextWidth) return;
+
+  globalScope.measureTextWidth = (font, text) => {
+    measureCanvas ??= window.document.createElement("canvas");
+    const context = measureCanvas.getContext("2d");
+    if (!context) return text.length * 10;
+    context.font = font;
+    return context.measureText(text).width;
+  };
+}
+
+async function loadRhwp() {
+  if (!rhwpModulePromise) {
+    rhwpModulePromise = (async () => {
+      installLocalTextMeasurement();
+      const rhwp = await import("@rhwp/core");
+      await rhwp.default({ module_or_path: "/rhwp_bg.wasm" });
+      return rhwp;
+    })();
+  }
+  return rhwpModulePromise;
+}
+
+function pageTextLines(layoutJson: string) {
+  let parsed: { runs?: RhwpTextRun[] };
+  try {
+    parsed = JSON.parse(layoutJson) as { runs?: RhwpTextRun[] };
+  } catch {
+    return [];
+  }
+
+  const runs = (parsed.runs ?? [])
+    .filter((run) => run.text && run.text.trim().length > 0)
+    .sort((left, right) => {
+      const yDifference = (left.y ?? 0) - (right.y ?? 0);
+      return Math.abs(yDifference) > 2.5
+        ? yDifference
+        : (left.x ?? 0) - (right.x ?? 0);
+    });
+
+  const rows: Array<{ y: number; runs: RhwpTextRun[] }> = [];
+  for (const run of runs) {
+    const y = run.y ?? 0;
+    const row = rows.find((candidate) => Math.abs(candidate.y - y) <= 2.5);
+    if (row) {
+      row.runs.push(run);
+    } else {
+      rows.push({ y, runs: [run] });
+    }
+  }
+
+  return rows
+    .sort((left, right) => left.y - right.y)
+    .map((row) =>
+      row.runs
+        .sort((left, right) => (left.x ?? 0) - (right.x ?? 0))
+        .map((run) => run.text ?? "")
+        .join("")
+        .replace(/\u00a0/g, " ")
+        .trimEnd(),
+    )
+    .filter((line) => line.trim().length > 0);
+}
+
+function sanitizeSvg(svg: string) {
+  const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
+  if (parsed.getElementsByTagName("parsererror").length > 0) {
+    throw new Error("HWP 페이지 그림을 안전하게 표시하지 못했습니다.");
+  }
+
+  parsed
+    .querySelectorAll("script, foreignObject, iframe, object, embed, audio, video")
+    .forEach((element) => element.remove());
+
+  parsed.querySelectorAll("*").forEach((element) => {
+    for (const attribute of Array.from(element.attributes)) {
+      const name = attribute.name.toLowerCase();
+      const value = attribute.value.trim().toLowerCase();
+      if (name.startsWith("on")) element.removeAttribute(attribute.name);
+      if (
+        (name === "href" || name === "xlink:href") &&
+        !value.startsWith("#") &&
+        !value.startsWith("data:image/")
+      ) {
+        element.removeAttribute(attribute.name);
+      }
+      if (name === "style" && /url\s*\(\s*['"]?(?:https?:|\/\/|javascript:)/i.test(value)) {
+        element.removeAttribute(attribute.name);
+      }
+    }
+  });
+
+  return new XMLSerializer().serializeToString(parsed.documentElement);
+}
+
+async function parseRhwp(file: File, format: "HWP" | "HWPX"): Promise<ParsedDocument> {
+  const rhwp = await loadRhwp();
+  const hwpDocument = new rhwp.HwpDocument(new Uint8Array(await file.arrayBuffer()));
+  const renderedPages = new Map<number, string>();
+
+  try {
+    const pageCount = hwpDocument.pageCount();
+    if (pageCount < 1) throw new Error(`${format}에서 표시할 페이지를 찾지 못했습니다.`);
+
+    const paragraphs: string[] = [];
+    const paragraphPages: number[] = [];
+    const pages: ParsedPage[] = [];
+
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      const pageParagraphIndexes: number[] = [];
+      for (const line of pageTextLines(hwpDocument.getPageTextLayout(pageIndex))) {
+        pageParagraphIndexes.push(paragraphs.length);
+        paragraphs.push(line);
+        paragraphPages.push(pageIndex);
+      }
+
+      let pageInfo: RhwpPageInfo = {};
+      try {
+        pageInfo = JSON.parse(hwpDocument.getPageInfo(pageIndex)) as RhwpPageInfo;
+      } catch {
+        // 페이지 크기 정보가 없더라도 SVG 자체 크기로 표시할 수 있습니다.
+      }
+
+      pages.push({
+        number: pageIndex + 1,
+        paragraphIndexes: pageParagraphIndexes,
+        width: pageInfo.width,
+        height: pageInfo.height,
+      });
+
+      if (pageIndex > 0 && pageIndex % 8 === 0) {
+        await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+      }
+    }
+
+    if (paragraphs.length === 0) {
+      throw new Error(`${format}에서 검사할 한글 본문을 찾지 못했습니다.`);
+    }
+
+    renderedPages.set(0, sanitizeSvg(hwpDocument.renderPageSvg(0)));
+
+    return {
+      name: file.name,
+      format,
+      paragraphs,
+      paragraphPages,
+      pages,
+      bytes: file.size,
+      previewKind: "original-svg",
+      renderPage: (pageIndex) => {
+        const safePageIndex = Math.max(0, Math.min(pageCount - 1, pageIndex));
+        const cached = renderedPages.get(safePageIndex);
+        if (cached) return cached;
+        const rendered = sanitizeSvg(hwpDocument.renderPageSvg(safePageIndex));
+        renderedPages.set(safePageIndex, rendered);
+        return rendered;
+      },
+      dispose: () => {
+        renderedPages.clear();
+        hwpDocument.free();
+      },
+    };
+  } catch (error) {
+    hwpDocument.free();
+    throw error;
+  }
+}
+
 async function parseDocx(file: File): Promise<ParsedDocument> {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const documentFile = zip.file("word/document.xml");
@@ -51,15 +286,15 @@ async function parseDocx(file: File): Promise<ParsedDocument> {
     throw new Error("DOCX에서 검사할 본문을 찾지 못했습니다.");
   }
 
-  return {
+  return createFlowDocument({
     name: file.name,
     format: "DOCX",
     paragraphs,
     bytes: file.size,
-  };
+  });
 }
 
-async function parseHwpx(file: File): Promise<ParsedDocument> {
+async function parseHwpxFallback(file: File): Promise<ParsedDocument> {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const sectionNames = Object.keys(zip.files)
     .filter((name) => /^Contents\/section\d+\.xml$/i.test(name))
@@ -85,12 +320,12 @@ async function parseHwpx(file: File): Promise<ParsedDocument> {
     throw new Error("HWPX에서 검사할 본문을 찾지 못했습니다.");
   }
 
-  return {
+  return createFlowDocument({
     name: file.name,
     format: "HWPX",
     paragraphs,
     bytes: file.size,
-  };
+  });
 }
 
 async function parseTxt(file: File): Promise<ParsedDocument> {
@@ -107,12 +342,12 @@ async function parseTxt(file: File): Promise<ParsedDocument> {
     throw new Error("TXT에 검사할 내용이 없습니다.");
   }
 
-  return {
+  return createFlowDocument({
     name: file.name,
     format: "TXT",
     paragraphs,
     bytes: file.size,
-  };
+  });
 }
 
 export async function parseDocument(file: File): Promise<ParsedDocument> {
@@ -120,12 +355,18 @@ export async function parseDocument(file: File): Promise<ParsedDocument> {
 
   if (extension === "txt") return parseTxt(file);
   if (extension === "docx") return parseDocx(file);
-  if (extension === "hwpx") return parseHwpx(file);
-  if (extension === "hwp") {
-    throw new Error(
-      "구형 HWP는 구조가 달라 현재 버전에서 직접 읽지 않습니다. 한글에서 HWPX로 저장한 뒤 불러오세요.",
-    );
+  if (extension === "hwp") return parseRhwp(file, "HWP");
+  if (extension === "hwpx") {
+    try {
+      return await parseRhwp(file, "HWPX");
+    } catch (renderError) {
+      try {
+        return await parseHwpxFallback(file);
+      } catch {
+        throw renderError;
+      }
+    }
   }
 
-  throw new Error("현재 TXT, DOCX, HWPX 문서를 불러올 수 있습니다.");
+  throw new Error("현재 HWP, HWPX, DOCX, TXT 문서를 불러올 수 있습니다.");
 }

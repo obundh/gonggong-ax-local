@@ -14,6 +14,7 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@rhwp/core": "^0.8.0",
     "drizzle-orm": "0.45.2",
     "jszip": "^3.10.1",
     "next": "16.2.6",

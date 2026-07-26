@@ -45,8 +45,28 @@ test("server-renders the local public-document checker", async () => {
   const html = await response.text();
   assert.match(html, /<title>문서살림 \| 공공 AX 로컬 시리즈 2<\/title>/i);
   assert.match(html, /공공문서 로컬 검수기/);
-  assert.match(html, /HWPX · DOCX · TXT/);
+  assert.match(html, /HWP · HWPX · DOCX · TXT/);
+  assert.match(html, /원문 페이지 이동/);
+  assert.match(html, /쪽<\/strong> 검사 결과/);
   assert.match(html, /외부 전송 없음/);
   assert.match(html, /국립국어원 공공언어/);
+  assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
+});
+
+test("server-renders the filename-only handover mapper", async () => {
+  const response = await render("/series3");
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+
+  const html = await response.text();
+  assert.match(
+    html,
+    /<title>업무이어봄 \| 공공 AX 로컬 시리즈 3<\/title>/i,
+  );
+  assert.match(html, /폴더와 파일명만으로/);
+  assert.match(html, /인수인계 폴더 선택/);
+  assert.match(html, /파일 내용은 읽지 않습니다/);
+  assert.match(html, /외부 전송 없음/);
+  assert.match(html, /재난업무 예시로 체험/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
