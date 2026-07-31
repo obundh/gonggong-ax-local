@@ -360,7 +360,7 @@
 .formatGuide {
   display: grid;
   width: min(820px, 100%);
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.65fr) minmax(250px, 0.85fr);
   gap: 12px;
 }
 
@@ -416,33 +416,43 @@
 
 .formatGuide ul {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0;
   padding: 10px;
   list-style: none;
 }
 
+.supportedFormats ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.unsupportedFormats ul {
+  grid-template-columns: 1fr;
+}
+
 .formatGuide li {
   min-width: 0;
-  padding: 3px 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e6e1;
+}
+
+.supportedFormats li:nth-child(odd) {
   border-right: 1px solid #e2e6e1;
 }
 
-.formatGuide li:last-child {
-  border-right: 0;
+.supportedFormats li:nth-last-child(-n + 2),
+.unsupportedFormats li:last-child {
+  border-bottom: 0;
 }
 
 .formatGuide li b,
 .formatGuide li span {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .formatGuide li b {
   color: #26342b;
   font-size: 10px;
+  line-height: 1.4;
 }
 
 .formatGuide li span {
@@ -743,6 +753,7 @@
 .categorySwatch[data-category="attachment"] { background: #d09a35; }
 .categorySwatch[data-category="font"] { background: #267eb0; }
 .categorySwatch[data-category="style"] { background: #b95876; }
+.categorySwatch[data-category="script"] { background: #a54b43; }
 .categorySwatch[data-category="structure"] { background: #65747e; }
 .categorySwatch[data-category="other"] { background: #929b93; }
 
@@ -966,6 +977,7 @@
 .glyph_attachment { background: #d09a35; }
 .glyph_font { background: #267eb0; }
 .glyph_style { background: #b95876; }
+.glyph_script { background: #a54b43; }
 .glyph_structure { background: #65747e; }
 .glyph_other { background: #929b93; }
 
@@ -1170,6 +1182,18 @@
 
   .formatGuide {
     grid-template-columns: 1fr;
+  }
+
+  .supportedFormats ul {
+    grid-template-columns: 1fr;
+  }
+
+  .supportedFormats li:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .supportedFormats li:nth-last-child(2) {
+    border-bottom: 1px solid #e2e6e1;
   }
 
   .formatGuide li {

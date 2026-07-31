@@ -12,6 +12,7 @@ import {
 } from "react";
 import styles from "./series5.module.css";
 import {
+  ACCEPTED_FILE_TYPES,
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   ExtractedResource,
@@ -19,8 +20,11 @@ import {
   KIND_LABELS,
   PackageExtractionError,
   ResourceCategory,
+  SUPPORTED_FORMAT_COUNT,
+  SUPPORTED_FORMAT_GROUPS,
   extractDocumentPackage,
   isInlinePreviewSupported,
+  isSupportedPackageExtension,
 } from "./resource-extractor";
 
 const MAX_SOURCE_BYTES = 100 * 1024 * 1024;
@@ -65,12 +69,17 @@ function ResourceGlyph({ resource }: { resource: ExtractedResource }) {
     attachment: "ATT",
     font: "FNT",
     style: "STY",
+    script: "VBA",
     structure: "XML",
     other: "ETC",
   };
   return (
     <span className={`${styles.resourceGlyph} ${styles[`glyph_${resource.category}`]}`} aria-hidden="true">
-      {resource.extension ? resource.extension.slice(0, 4).toUpperCase() : labels[resource.category]}
+      {resource.category === "script"
+        ? labels.script
+        : resource.extension
+          ? resource.extension.slice(0, 4).toUpperCase()
+          : labels[resource.category]}
     </span>
   );
 }
@@ -156,8 +165,8 @@ export default function SeriesFivePage() {
     setPhase("reading");
 
     const extension = file.name.split(".").pop()?.toLowerCase();
-    if (!extension || !["hwpx", "pptx", "docx"].includes(extension)) {
-      setError("지원 형식: HWPX · PPTX · DOCX");
+    if (!extension || !isSupportedPackageExtension(extension)) {
+      setError(`지원 형식: ZIP 패키지 문서 ${SUPPORTED_FORMAT_COUNT}종`);
       setPhase("error");
       return;
     }
@@ -255,7 +264,7 @@ export default function SeriesFivePage() {
         <div className={styles.dropCopy}>
           <span className={styles.sectionLabel}>문서 패키지</span>
           <h1>문서 리소스 추출기</h1>
-          <p>HWPX · PPTX · DOCX</p>
+          <p>ZIP 패키지 문서 {SUPPORTED_FORMAT_COUNT}종</p>
         </div>
         <button type="button" className={styles.primaryButton} tabIndex={-1}>
           파일 선택
@@ -268,12 +277,15 @@ export default function SeriesFivePage() {
           <header>
             <span aria-hidden="true">✓</span>
             <strong>지원 문서</strong>
-            <b>3</b>
+            <b>{SUPPORTED_FORMAT_COUNT}</b>
           </header>
           <ul>
-            <li><b>HWPX</b><span>한글 표준 문서</span></li>
-            <li><b>PPTX</b><span>PowerPoint 문서</span></li>
-            <li><b>DOCX</b><span>Word 문서</span></li>
+            {SUPPORTED_FORMAT_GROUPS.map((group) => (
+              <li key={group.label}>
+                <b>{group.extensions.map((extension) => extension.toUpperCase()).join(" · ")}</b>
+                <span>{group.label}</span>
+              </li>
+            ))}
           </ul>
         </section>
         <section className={styles.unsupportedFormats}>
@@ -283,8 +295,8 @@ export default function SeriesFivePage() {
             <b>현재</b>
           </header>
           <ul>
-            <li><b>HWP · PPT · DOC</b><span>구형 형식</span></li>
-            <li><b>PDF · XLSX · ZIP</b><span>기타 형식</span></li>
+            <li><b>HWP · DOC · PPT · XLS</b><span>구형 바이너리</span></li>
+            <li><b>PDF · 일반 ZIP</b><span>별도 구조</span></li>
             <li><b>암호 · DRM · 손상</b><span>보호·오류 문서</span></li>
           </ul>
         </section>
@@ -460,7 +472,7 @@ export default function SeriesFivePage() {
         </div>
         <div className={styles.topStatus}>
           <span><i /> 로컬 처리</span>
-          <b>HWPX · PPTX · DOCX</b>
+          <b>{SUPPORTED_FORMAT_COUNT}개 형식</b>
         </div>
       </header>
 
@@ -468,7 +480,7 @@ export default function SeriesFivePage() {
         ref={inputRef}
         className={styles.hiddenInput}
         type="file"
-        accept=".hwpx,.pptx,.docx"
+        accept={ACCEPTED_FILE_TYPES}
         onChange={handleInput}
       />
 

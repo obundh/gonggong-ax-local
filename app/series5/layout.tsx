@@ -15,14 +15,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "공공 AX 로컬 5 - 문서 리소스 추출기",
-    description: "HWPX·PPTX·DOCX 브라우저 로컬 리소스 분류·추출",
+    description: "ZIP 패키지 문서 33종 | 브라우저 로컬 리소스 분류·추출",
     applicationName: "문서 리소스 추출기",
     alternates: {
       canonical: `${origin}/series5`,
     },
     openGraph: {
       title: "문서 리소스 추출기",
-      description: "HWPX · PPTX · DOCX | 이미지 · 미디어 · 첨부 · 문서 구조",
+      description: "ZIP 패키지 문서 33종 | 이미지 · 미디어 · 첨부 · 문서 구조",
       type: "website",
       url: `${origin}/series5`,
       images: [
@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: "문서 리소스 추출기",
-      description: "HWPX · PPTX · DOCX | 브라우저 로컬 처리",
+      description: "ZIP 패키지 문서 33종 | 브라우저 로컬 처리",
       images: [imageUrl],
     },
   };
