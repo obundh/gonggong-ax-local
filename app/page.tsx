@@ -108,7 +108,11 @@ export default function Home() {
     if (!clean || isThinking) return;
 
     const userMessage: Message = {
-      id: Date.now(),
+      id:
+        messages.reduce(
+          (maximum, message) => Math.max(maximum, message.id),
+          0,
+        ) + 1,
       role: "user",
       text: clean,
     };
@@ -167,7 +171,7 @@ export default function Home() {
       setMessages((current) => [
         ...current,
         {
-          id: Date.now() + 1,
+          id: userMessage.id + 1,
           role: "assistant",
           text: answer,
         },
@@ -183,7 +187,7 @@ export default function Home() {
       setMessages((current) => [
         ...current,
         {
-          id: Date.now() + 1,
+          id: userMessage.id + 1,
           role: "assistant",
           text: `로컬 모델과 대화하지 못했습니다.\n\n${detail}\n${localHint}`,
         },
@@ -288,7 +292,7 @@ export default function Home() {
     setDiscoveryState("error");
   };
 
-  const useLocalModel = (model: LocalModel) => {
+  const selectLocalModel = (model: LocalModel) => {
     setActiveModel(model);
     setDiscoveryOpen(false);
     setModelOpen(false);
@@ -413,7 +417,7 @@ export default function Home() {
                     <button
                       className={model.id === activeModel.id ? "selected" : ""}
                       key={model.id}
-                      onClick={() => useLocalModel(model)}
+                      onClick={() => selectLocalModel(model)}
                     >
                       <span>{model.id === activeModel.id ? "◆" : "◇"}</span>
                       <span>
@@ -655,7 +659,7 @@ export default function Home() {
                         <strong>{model.label}</strong>
                         <small>{model.id} · {model.parameterSize} · {model.quantization} · {formatBytes(model.sizeBytes)}</small>
                       </span>
-                      <button onClick={() => useLocalModel(model)}>
+                      <button onClick={() => selectLocalModel(model)}>
                         {model.id === activeModel.id ? "사용 중" : "사용"}
                       </button>
                     </div>

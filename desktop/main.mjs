@@ -29,6 +29,17 @@ const smokeMode = process.argv.includes("--smoke-test");
 const smokeOutputArgument = process.argv.find((argument) =>
   argument.startsWith("--smoke-output="),
 );
+const configuredStartPath = process.env.GONGGONG_AX_START_PATH ?? "/series2";
+
+function normalizeStartPath(value) {
+  const candidate = value.trim();
+  if (!/^\/[a-z0-9/_-]*$/i.test(candidate)) {
+    throw new Error(`Invalid local start path: ${JSON.stringify(value)}`);
+  }
+  return candidate.length > 1 ? candidate.replace(/\/+$/, "") : candidate;
+}
+
+const startPath = normalizeStartPath(configuredStartPath);
 
 let mainWindow = null;
 let localServer = null;
@@ -195,7 +206,7 @@ function createMainWindow(origin) {
   window.on("closed", () => {
     mainWindow = null;
   });
-  void window.loadURL(`${origin}/series2`);
+  void window.loadURL(`${origin}${startPath}`);
   return window;
 }
 
@@ -210,6 +221,7 @@ async function runSmokeTest(origin) {
     { path: "/", kind: "html" },
     { path: "/series2", kind: "html" },
     { path: "/series3", kind: "html" },
+    { path: "/series5", kind: "html" },
     { path: "/rhwp_bg.wasm", kind: "wasm" },
   ];
   const results = [];
@@ -236,6 +248,7 @@ async function runSmokeTest(origin) {
     ok: results.every((result) => result.valid),
     executable: process.execPath,
     appRoot,
+    startPath,
     checkedAt: new Date().toISOString(),
     results,
   };
@@ -266,6 +279,7 @@ app.whenReady().then(async () => {
       ok: false,
       executable: process.execPath,
       appRoot,
+      startPath,
       checkedAt: new Date().toISOString(),
       error: error instanceof Error ? error.stack ?? error.message : String(error),
     };

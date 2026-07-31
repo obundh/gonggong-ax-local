@@ -473,6 +473,14 @@ export default function SeriesFivePage() {
         <div className={styles.topStatus}>
           <span><i /> 로컬 처리</span>
           <b>{SUPPORTED_FORMAT_COUNT}개 형식</b>
+          <a
+            className={styles.downloadLink}
+            href="https://github.com/obundh/gonggong-ax-local-2/releases/tag/series5-v0.1.0"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Windows 원클릭
+          </a>
         </div>
       </header>
 

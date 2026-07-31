@@ -106,6 +106,8 @@ test("server-renders the local document resource extractor", async () => {
   assert.match(html, /PDF · 일반 ZIP/);
   assert.match(html, /암호 · DRM · 손상/);
   assert.match(html, /외부 전송 없음/);
+  assert.match(html, /Windows 원클릭/);
+  assert.match(html, /series5-v0\.1\.0/);
   assert.match(html, /series5-og\.png/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });

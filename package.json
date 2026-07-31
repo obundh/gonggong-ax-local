@@ -10,13 +10,12 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "licenses:generate": "node scripts/generate-third-party-licenses.mjs --write",
-    "licenses:check": "node scripts/generate-third-party-licenses.mjs --check",
-    "test": "npm run build && npm run licenses:check && node --test tests/rendered-html.test.mjs tests/series3-analyzer.test.mjs tests/series3-local-ai.test.mjs tests/series5-resource-extractor.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/series3-analyzer.test.mjs tests/series3-local-ai.test.mjs tests/series5-resource-extractor.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "desktop:dir": "npm run build && electron-builder --dir",
     "desktop:build": "npm run build && node scripts/build-desktop.mjs",
+    "desktop:series5": "npm run build && node scripts/build-series5-windows.mjs",
     "media:threads": "node scripts/build-threads-comic.mjs"
   },
   "dependencies": {

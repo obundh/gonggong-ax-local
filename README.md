@@ -1,3 +1,63 @@
+# 공공AX 로컬 시리즈 5 - 문서 리소스 추출기
+
+문서를 직접 ZIP으로 바꾸거나 내부 폴더를 찾아다닐 필요 없이, 문서에 들어 있는
+이미지·영상·오디오·첨부파일·글꼴·서식·스크립트·문서 구조를 자동으로 분류해
+꺼내는 Windows용 도구입니다. 분석은 PC의 로컬 브라우저 메모리에서 처리하며
+원본 문서는 바꾸지 않습니다.
+
+> **처음 사용하는 분:** 아래 공식 릴리스의 `Assets`에서
+> `GonggongAX-Series5-Resource-Extractor-0.1.0-win-x64.zip`을 받은 뒤,
+> 압축을 풀고 `시리즈5_실행.cmd`를 더블클릭하세요. GitHub가 자동으로 만드는
+> `Source code (zip)`은 실행용 파일이 아닙니다.
+
+[Windows용 시리즈 5 릴리스 열기](https://github.com/obundh/gonggong-ax-local-2/releases/tag/series5-v0.1.0) ·
+[실행용 ZIP 바로 받기](https://github.com/obundh/gonggong-ax-local-2/releases/download/series5-v0.1.0/GonggongAX-Series5-Resource-Extractor-0.1.0-win-x64.zip) ·
+[만화 5장 ZIP 받기](https://github.com/obundh/gonggong-ax-local-2/releases/download/series5-v0.1.0/GonggongAX-Series5-Beginner-Comic.zip) ·
+[초보자용 전체 설명서](docs/SERIES5_BEGINNER_GUIDE.md)
+
+![공공AX 로컬 시리즈 5 문서 리소스 추출기 소개](public/series5/comic/series5-comic-01.png)
+
+## 시리즈 5 빠른 실행
+
+1. [공식 `series5-v0.1.0` 릴리스](https://github.com/obundh/gonggong-ax-local-2/releases/tag/series5-v0.1.0)를 엽니다.
+2. 아래쪽 `Assets`에서 정확히
+   `GonggongAX-Series5-Resource-Extractor-0.1.0-win-x64.zip`을 누릅니다.
+3. 브라우저의 `다운로드` 폴더에서 ZIP을 찾아 `모두 압축 풀기`를 누릅니다.
+4. 압축을 푼 폴더의 `시리즈5_실행.cmd`를 더블클릭합니다.
+5. 열린 시리즈 5 창에 문서를 고르거나 끌어놓고, 필요한 리소스를 저장합니다.
+
+다운로드 위치 찾기, SHA-256 확인, SmartScreen 판단, 지원 형식 33종, 오류 해결,
+삭제 방법은 [초보자용 전체 설명서](docs/SERIES5_BEGINNER_GUIDE.md)에 화면 순서대로
+정리했습니다.
+
+## 시리즈 5 지원 형식
+
+- HWPX: `.hwpx`
+- Word: `.docx`, `.docm`, `.dotx`, `.dotm`
+- PowerPoint: `.pptx`, `.pptm`, `.potx`, `.potm`, `.ppsx`, `.ppsm`
+- Excel: `.xlsx`, `.xlsm`, `.xlsb`, `.xltx`, `.xltm`
+- OpenDocument: `.odt`, `.ods`, `.odp`, `.odg`, `.ott`, `.ots`, `.otp`, `.otg`
+- Visio: `.vsdx`, `.vsdm`, `.vssx`, `.vssm`, `.vstx`, `.vstm`
+- XPS: `.xps`, `.oxps`
+- 전자책: `.epub`
+
+파일 한 개의 최대 크기는 100 MB입니다. 구형 바이너리 형식인 HWP·DOC·PPT·XLS,
+PDF, 일반 ZIP, 암호·DRM이 적용된 파일, 손상된 파일은 지원하지 않습니다. 매크로가
+포함된 문서도 매크로를 실행하지 않고 관련 파일을 별도 리소스로 분류합니다.
+
+## 시리즈 5 만화 안내 5장
+
+1. [문서 리소스 추출기 소개](public/series5/comic/series5-comic-01.png)
+2. [GitHub Releases에서 실행용 ZIP 받기](public/series5/comic/series5-comic-02.png)
+3. [압축 풀고 `시리즈5_실행.cmd` 실행하기](public/series5/comic/series5-comic-03.png)
+4. [문서 넣고 자동 분류 결과 확인하기](public/series5/comic/series5-comic-04.png)
+5. [개별 파일 또는 전체 ZIP 저장하기](public/series5/comic/series5-comic-05.png)
+
+만화의 대체텍스트·제작 사양·출처는
+[만화 자료 안내](public/series5/comic/README.md)에 정리했습니다.
+
+---
+
 # 공공AX 로컬 시리즈 2 - 문서 검수
 
 HWP·HWPX·DOCX·TXT 문서를 외부 서버로 보내지 않고, Windows PC 안에서
@@ -94,3 +154,4 @@ npm run dev
 - `/`: 공공AX 로컬 시리즈 1 업무공간
 - `/series2`: 공공AX 로컬 시리즈 2 - 문서 검수
 - `/series3`: 공공AX 로컬 시리즈 - 인수인계
+- `/series5`: 공공AX 로컬 시리즈 5 - 문서 리소스 추출기

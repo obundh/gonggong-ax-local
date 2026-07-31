@@ -113,6 +113,30 @@
   font-size: 11px;
 }
 
+.downloadLink {
+  display: inline-grid;
+  min-height: 34px;
+  place-items: center;
+  padding: 0 14px;
+  border: 1px solid #245d48;
+  border-radius: 18px;
+  color: #f8fff9;
+  background: #245d48;
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.downloadLink:hover {
+  background: #174a37;
+}
+
+.downloadLink:focus-visible {
+  outline: 3px solid rgba(200, 240, 108, 0.72);
+  outline-offset: 2px;
+}
+
 .topStatus span {
   display: inline-flex;
   align-items: center;

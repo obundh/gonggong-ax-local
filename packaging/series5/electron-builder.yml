@@ -1,0 +1,24 @@
+appId: kr.local.publicax.series5
+productName: "공공 AX 로컬 시리즈 5 - 문서 리소스 추출기"
+asar: false
+compression: store
+npmRebuild: false
+forceCodeSigning: false
+extraMetadata:
+  main: desktop/series5-main.mjs
+directories:
+  output: release
+files:
+  - desktop/**/*
+  - dist/**/*
+  - package.json
+  - LICENSE
+  - THIRD_PARTY_NOTICES.md
+  - "!node_modules{,/**/*}"
+win:
+  signAndEditExecutable: false
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: GonggongAX-Series5-Resource-Extractor-${version}-win-x64.${ext}
