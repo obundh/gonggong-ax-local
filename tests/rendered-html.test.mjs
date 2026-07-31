@@ -93,7 +93,11 @@ test("server-renders the local document resource extractor", async () => {
   assert.match(html, /HWPX · PPTX · DOCX/);
   assert.match(html, /파일 선택/);
   assert.match(html, /파일 끌어놓기/);
-  assert.match(html, /이미지·미디어/);
+  assert.match(html, /지원 문서/);
+  assert.match(html, /미지원 문서/);
+  assert.match(html, /HWP · PPT · DOC/);
+  assert.match(html, /PDF · XLSX · ZIP/);
+  assert.match(html, /암호 · DRM · 손상/);
   assert.match(html, /외부 전송 없음/);
   assert.match(html, /series5-og\.png/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);

@@ -263,10 +263,31 @@ export default function SeriesFivePage() {
         <span className={styles.dropHint}>파일 끌어놓기</span>
       </div>
 
-      <div className={styles.featureStrip} aria-label="처리 범위">
-        <span><b>01</b> 이미지·미디어</span>
-        <span><b>02</b> 첨부·글꼴</span>
-        <span><b>03</b> 테마·문서 구조</span>
+      <div className={styles.formatGuide} aria-label="지원 문서와 미지원 문서">
+        <section className={styles.supportedFormats}>
+          <header>
+            <span aria-hidden="true">✓</span>
+            <strong>지원 문서</strong>
+            <b>3</b>
+          </header>
+          <ul>
+            <li><b>HWPX</b><span>한글 표준 문서</span></li>
+            <li><b>PPTX</b><span>PowerPoint 문서</span></li>
+            <li><b>DOCX</b><span>Word 문서</span></li>
+          </ul>
+        </section>
+        <section className={styles.unsupportedFormats}>
+          <header>
+            <span aria-hidden="true">×</span>
+            <strong>미지원 문서</strong>
+            <b>현재</b>
+          </header>
+          <ul>
+            <li><b>HWP · PPT · DOC</b><span>구형 형식</span></li>
+            <li><b>PDF · XLSX · ZIP</b><span>기타 형식</span></li>
+            <li><b>암호 · DRM · 손상</b><span>보호·오류 문서</span></li>
+          </ul>
+        </section>
       </div>
     </section>
   );
@@ -285,7 +306,7 @@ export default function SeriesFivePage() {
       <div className={styles.errorMark} aria-hidden="true">!</div>
       <span className={styles.sectionLabel}>추출 실패</span>
       <h1>{error}</h1>
-      <p>암호화 문서 · 레거시 HWP · 손상 파일 제외</p>
+      <p>HWP · PPT · DOC · 암호 · DRM · 손상 파일</p>
       <button type="button" className={styles.primaryButton} onClick={reset}>다른 파일</button>
     </section>
   );
