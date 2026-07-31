@@ -82,6 +82,23 @@ test("server-renders the filename-only handover mapper", async () => {
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
+test("server-renders the local document resource extractor", async () => {
+  const response = await render("/series5");
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+
+  const html = await response.text();
+  assert.match(html, /<title>공공 AX 로컬 5 - 문서 리소스 추출기<\/title>/i);
+  assert.match(html, /문서 리소스 추출기/);
+  assert.match(html, /HWPX · PPTX · DOCX/);
+  assert.match(html, /파일 선택/);
+  assert.match(html, /파일 끌어놓기/);
+  assert.match(html, /이미지·미디어/);
+  assert.match(html, /외부 전송 없음/);
+  assert.match(html, /series5-og\.png/);
+  assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
+});
+
 test("series 3 exposes shared year-month controls and both calendar views", async () => {
   const source = await readFile(
     new URL("../app/series3/page.tsx", import.meta.url),
