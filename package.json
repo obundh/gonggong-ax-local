@@ -1,6 +1,7 @@
 {
   "name": "gonggong-ax-local-series-2-document-review",
   "version": "0.1.0",
+  "license": "UNLICENSED",
   "private": true,
   "main": "desktop/main.mjs",
   "engines": {
