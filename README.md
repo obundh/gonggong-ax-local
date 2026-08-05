@@ -5,6 +5,10 @@ HWP·HWPX·DOCX·TXT 문서를 외부 서버로 보내지 않고, Windows PC 안
 
 ![공공AX 로컬 시리즈 2 문서 검수 사용 화면](public/document-review-hero.png)
 
+> **시리즈 3 MVP도 Git에 공개했습니다.** 전임자가 남긴 폴더명과 파일명만으로 업무
+> 가지와 진행 단서를 정리하는 [비공개 배포 화면](https://galapagos-public-ai.obun.chatgpt.site/series3)과
+> [상세 사용 설명](docs/SERIES3_USER_GUIDE.md)을 확인할 수 있습니다.
+
 ## 실제 구동 화면
 
 아래 이미지는 생성형 UI가 아니라 `http://localhost:3000/series2`에서 직접 캡처한
@@ -57,6 +61,44 @@ SmartScreen이 게시자를 확인하지 못할 수 있습니다. 현재 실행�
 - 규칙 기반 제안은 법률·정책·행정 문맥의 정답을 보장하지 않습니다. 배포 전 담당자가
   원문과 근거를 최종 확인해야 합니다.
 
+## 시리즈 3 MVP · 인수인계
+
+폴더명과 파일명, 확장자, 날짜 표현, 마지막 수정일을 이용해 전임자의 업무 폴더를
+업무 가지별로 묶고 1차 인수인계 초안을 만드는 MVP입니다. 문서 본문은 읽지 않으며,
+완료·진행 상태는 확정이 아니라 파일명에서 발견한 단서로 표시합니다.
+
+[비공개 배포 화면 열기](https://galapagos-public-ai.obun.chatgpt.site/series3)
+
+현재 배포 화면은 소유자 전용입니다. GitHub 방문자는 아래 로컬 실행 방법으로
+[Series 3를 실행](docs/SERIES3_USER_GUIDE.md#10-소스에서-로컬-실행하기)할 수
+있습니다.
+
+![폴더를 로컬 PC 안에서 업무 가지와 일정으로 정리하는 생성형 안내 이미지](public/series3/series3-handover-hero.png)
+
+위 그림은 폴더에서 업무 가지와 일정 단서를 정리하는 개념을 설명하기 위해 만든
+생성형 안내 이미지입니다. 실제 화면과 글자 배치는 아래 캡처를 기준으로 확인하세요.
+
+### 실제 구동 화면
+
+아래 이미지는 생성형 UI가 아니라 배포된 `/series3`에서 내장 `재난업무 예시`를
+직접 실행해 캡처한 화면입니다. 실제 기관 문서나 개인정보는 사용하지 않았습니다.
+
+![파일명에서 제목 후보와 문서 역할을 추출한 실제 화면](public/series3/actual-app-files.png)
+
+![업무 가지별 상태 단서와 규칙 근거를 정리한 실제 인수인계 화면](public/series3/actual-app-handover.png)
+
+### 3분 사용법
+
+1. `재난업무 예시`로 기능을 확인하거나 `폴더 선택`으로 인수인계 폴더를 고릅니다.
+2. `파일 탐색`에서 추출 제목, 문서 역할, 날짜 후보와 수정일을 확인합니다.
+3. `일정 달력`에서 파일명 날짜와 수정일을 비교하고 담당자가 실제 시행일을 체크합니다.
+4. `인수인계 보기`에서 업무 가지와 완료·진행·상시관리 단서를 검토합니다.
+5. `초안 저장` 또는 `JSON`으로 확인 결과를 내려받습니다.
+
+화면별 설명, Ollama·Gemma 4 E2B 선택 기능과 한계는
+[Series 3 사용 설명서](docs/SERIES3_USER_GUIDE.md)에 정리했습니다. 현재 Series 3는
+웹 MVP이며 Windows 포터블 EXE의 시작 화면은 아직 Series 2입니다.
+
 ## 개발 및 빌드
 
 요구 환경은 Node.js 22.13 이상과 Windows x64입니다.
@@ -76,6 +118,7 @@ npm run dev
 ```
 
 개발 화면은 `http://localhost:3000/series2`에서 확인합니다.
+Series 3 인수인계 MVP는 `http://localhost:3000/series3`에서 확인합니다.
 
 ## 데이터·라이선스·법적 고지
 
@@ -94,3 +137,5 @@ npm run dev
 - `/`: 공공AX 로컬 시리즈 1 업무공간
 - `/series2`: 공공AX 로컬 시리즈 2 - 문서 검수
 - `/series3`: 공공AX 로컬 시리즈 - 인수인계
+  ([비공개 배포 화면](https://galapagos-public-ai.obun.chatgpt.site/series3),
+  [상세 사용 설명](docs/SERIES3_USER_GUIDE.md))
